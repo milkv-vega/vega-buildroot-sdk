@@ -1,0 +1,1 @@
+cmd_/home/dev/Nuclei/linux_sdk/linux/drivers/net/ethernet/fsl/Module.symvers := sed 's/ko$$/o/' /home/dev/Nuclei/linux_sdk/linux/drivers/net/ethernet/fsl/modules.order | scripts/mod/modpost     -o /home/dev/Nuclei/linux_sdk/linux/drivers/net/ethernet/fsl/Module.symvers -e    -T -

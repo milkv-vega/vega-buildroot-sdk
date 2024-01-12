@@ -1,0 +1,1022 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>VLAN配置</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+	<link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+	<!-- <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script> -->
+
+	<script language="JavaScript">
+
+		var arr_lag_vlan_str = "";
+		var arr_lag_vlan_num = new Array;
+		function init() {
+			var cf = document.forms[0];
+			var t = 0, i = 0, j = 0;
+
+			var objTb = document.getElementById("portlist");
+			var arrType = new Array(), arrName = new Array(), arrClassName = new Array(), arrInputType = new Array(), arrWide = new Array();
+			var arrText = new Array(), arrValue = new Array();
+
+			var arr_pvid = new Array(), arr_mode = new Array(), arr_allow = new Array(), arr_untag = new Array();
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+
+			cf.manage_vlan.value = cf.h_manage_vlan.value;
+			for (t = 0; t < 4; t++) {
+				if (t == 1) {
+					arrType[t] = "select";
+					arrInputType[t] = "";
+					arrClassName[t] = "select1";
+					arrName[t] = "mode";
+					arrWide[t] = "10%";
+				}
+				else {
+					arrType[t] = "input";
+					arrInputType[t] = "";
+					if (t == 0) {
+						arrClassName[t] = "input_txt";
+						arrName[t] = "pvid";
+						arrWide[t] = "10%";
+					}
+					else if (t == 2) {
+						arrClassName[t] = "input_txt2";
+						arrName[t] = "allow_vlan";
+						arrWide[t] = "35%";
+					}
+					else if (t == 3) {
+						arrClassName[t] = "input_txt2";
+						arrName[t] = "no_tag_vlan";
+						arrWide[t] = "35%";
+					}
+				}
+			}
+
+			var arr_trunk_setting = cf.trunk_setting.value.split(";");
+			var arr_lacp_group_cfg = cf.lacp_group_cfg.value.split(";");
+
+			if ("enable" == cf.h_trunk_enable.value) {
+				for (i = 0; i < arr_trunk_setting.length - 1; i++) {
+					if (arr_trunk_setting[i].split(":")[1] == "1") {
+						arr_lag_vlan_str += cf.vlan_lag_port_set.value.split(";")[i] + ";";
+						arr_lag_vlan_num[j] = i;
+						j++;
+					}
+				}
+			}
+
+			var lacp_status = cf.lacp_status.value.split(";");
+
+			if ("1" == cf.h_lacp_enable.value) {
+				for (i = 0; i < arr_lacp_group_cfg.length - 1; i++) {
+					if (arr_lacp_group_cfg[i].split(":")[3] == "1") {
+						if (lacp_status[i].split(":")[0] == "1") {
+							arr_lag_vlan_str += cf.vlan_lag_port_set.value.split(";")[i] + ";";
+							arr_lag_vlan_num[j] = i;
+							j++;
+						}
+					}
+				}
+			}
+
+			var arr_lag_vlan = arr_lag_vlan_str.split(";");
+
+			if (arr_lag_vlan.length > 1)
+				CreateTableElementByCount(1, arr_lag_vlan.length - 1, 0, objTb, arrType, arrName, arrClassName, arrWide, arrInputType);
+
+			comCreateTableElementById(1, ports, gPorts, objTb, arrType, arrName, arrClassName, arrWide, arrInputType);
+
+			var portnum = parseInt(cf.port_bits.value);
+			var tmp_cnt = 0;
+			while (portnum != 0) {
+				portnum = portnum >> 1;
+				tmp_cnt++;
+			}
+
+			for (i = 0; i < arr_lag_vlan.length - 1; i++) {
+				cf.pvid[i + tmp_cnt].parentNode.parentNode.childNodes[0].innerHTML = "LAG" + arr_lag_vlan[i].split(":")[4];
+			}
+
+			var arr_vlan_param = new Array();
+			arr_vlan_params = (cf.vlan_port_set.value + arr_lag_vlan_str).split(";");
+			for (i = 0; i < cf.pvid.length; i++) {
+				arr_vlan_param = arr_vlan_params[i].split(":")
+
+				arr_pvid[i] = arr_vlan_param[0];
+				arr_mode[i] = arr_vlan_param[1];
+				arr_allow[i] = arr_vlan_param[2];
+				arr_untag[i] = arr_vlan_param[3];
+				if (arr_untag[i] == "0")
+					arr_untag[i] = " "
+
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 6, undefined, undefined, undefined, undefined, arr_pvid);
+
+			arrText = ["Access", "Trunk", "Hybrid"];
+			arrValue = [0, 1, 2];
+			comCreateTdElementById_Select(document.getElementsByName(arrName[1]), 0, document.getElementsByName(arrName[1]).length - 1, 2, undefined, "set_mode()", undefined, arrValue, arrText, arr_mode);
+
+			comCreateTdElementById(document.getElementsByName(arrName[2]), 0, document.getElementsByName(arrName[2]).length - 1, 6, undefined, undefined, undefined, undefined, arr_allow);
+
+			comCreateTdElementById(document.getElementsByName(arrName[3]), 0, document.getElementsByName(arrName[3]).length - 1, 6, undefined, undefined, undefined, undefined, arr_untag);
+
+			set_mode();
+			show_vlan_table();
+
+			dataToVisible(cf);
+
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			setDisabled(true, cf.manage_vlan);
+
+			for (i = 0; i < cf.pvid.length; i++)
+				setDisabled(true, cf.pvid[i], cf.mode[i], cf.allow_vlan[i], cf.no_tag_vlan[i]);
+
+			setDisabled(true, cf.show, cf.save, cf.cancel);
+		}
+
+		function set_mode() {
+			var cf = document.forms[0];
+			var i = 0, j = 0;
+			var trunk_maps = 0;
+			var lacp_maps = 0;
+			var arr_trunk_setting = cf.trunk_setting.value.split(";");
+			var arr_lacp_port_cfg = cf.lacp_port_cfg.value.split(";");
+			var arr_lacp_group_cfg = cf.lacp_group_cfg.value.split(";");
+
+			if ("enable" == cf.h_trunk_enable.value) {
+				for (i = 0; i < arr_trunk_setting.length - 1; i++) {
+					if (arr_trunk_setting[i].split(":")[1] == "1")
+						trunk_maps |= arr_trunk_setting[i].split(":")[0];
+				}
+
+				for (i = 0; i < cf.pvid.length; i++) {
+					if (trunk_maps & (1 << i))
+						setDisabled(true, cf.mode[i], cf.pvid[i], cf.allow_vlan[i], cf.no_tag_vlan[i]);
+				}
+			}
+
+			var lacp_status = cf.lacp_status.value.split(";");
+
+			if ("1" == cf.h_lacp_enable.value) {
+				for (i = 0; i < arr_lacp_group_cfg.length - 1; i++) {
+					if (arr_lacp_group_cfg[i].split(":")[3] == "1") {
+						if (lacp_status[i].split(":")[0] == "1") {
+							for (j = 0; j < arr_lacp_port_cfg.length - 1; j++) {
+								if ((arr_lacp_port_cfg[j].split(":")[2] == "1") && (lacp_status[i].split(":")[1] & (1 << j)))
+									lacp_maps |= (1 << j);
+							}
+						}
+					}
+				}
+
+				for (i = 0; i < cf.pvid.length; i++) {
+					if (lacp_maps & (1 << i))
+						setDisabled(true, cf.mode[i], cf.pvid[i], cf.allow_vlan[i], cf.no_tag_vlan[i]);
+					else {
+						if (cf.mode[i].value == "0")//access
+						{
+							setDisabled(false, cf.pvid[i], cf.allow_vlan[i], cf.no_tag_vlan[i]);
+							setDisabled(true, cf.pvid[i], cf.no_tag_vlan[i]);
+						}
+						else if (cf.mode[i].value == "1")//trunk
+						{
+							setDisabled(false, cf.pvid[i], cf.allow_vlan[i], cf.no_tag_vlan[i]);
+							setDisabled(true, cf.no_tag_vlan[i]);
+						}
+						else if (cf.mode[i].value == "2")//hybrid
+						{
+							setDisabled(false, cf.pvid[i], cf.allow_vlan[i], cf.no_tag_vlan[i]);
+						}
+					}
+				}
+			}
+		}
+
+		function check_erps(protocol_vlan, allow_vlan) {
+			if (protocol_vlan.length == 0)
+				return 0;
+			if (isNaN(allow_vlan)) {
+				if (allow_vlan.indexOf(","))
+					tmp_array = allow_vlan.split(",");
+				for (j = 0; j < tmp_array.length; j++) {
+					if (isNaN(tmp_array[j])) {
+						tmp_str = tmp_array[j].split("-");
+						for (i = 0; i < protocol_vlan.length; i++)
+							if (protocol_vlan[i] >= parseInt(tmp_str[0]) && protocol_vlan[i] <= parseInt(tmp_str[1]))
+								return protocol_vlan[i];
+					}
+					else {
+						for (i = 0; i < protocol_vlan.length; i++)
+							if (parseInt(tmp_array[j]) == protocol_vlan[i])
+								return protocol_vlan[i];
+					}
+				}
+			}
+			else {
+				for (i = 0; i < protocol_vlan.length; i++)
+					if (parseInt(allow_vlan) == protocol_vlan[i])
+						return protocol_vlan[i];
+			}
+			return 0;
+		}
+
+
+		function checkData_pre() {
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var ports_set = cf.vlan_port_set.value + arr_lag_vlan_str;
+			var total_ports = cf.switch_port.value;
+			var arr_port_set = new Array(), arr_tmp = new Array();
+			var trunk_port = 0;
+
+			var ret = 0, k = 0, n = 0;
+			var i = 0, j = 0, a = 0, b = 0;
+			var msg = "", strPort = "";
+			var tmp_vlan_port_set = "";
+			var tmp_config = "";
+			var vlan_length = 0;
+			var new_allow_vlan = "";
+			var old_allow_vlan = "";
+			var new_untag_vlan = "";
+			var old_untag_vlan = "";
+			vlan_length = 4094;
+			var erps_ring_cfg = cf.erps_ring_config.value.split(";");
+			var protocol_vlan = new Array();
+			var arr_lacp_port_cfg = cf.lacp_port_cfg.value.split(";");
+
+			if (cf.h_erps_enable.value == "enable")
+				for (k = 0; k < erps_ring_cfg.length; k++) {
+					var config = erps_ring_cfg[k].split(":");
+					if (config[0] == "1")
+						protocol_vlan[k] = parseInt(config[3]);
+				}
+
+			arr_port_set = ports_set.split(";");
+
+			msg += checkInt(cf.manage_vlan, msg_vlan_manage_vlan_range_error, 1, 4094, true);
+
+			for (i = 0; i < cf.pvid.length; i++) {
+				if (i < cf.switch_port.value) {
+					if (ports & 1) {
+						if (gPorts & 1)
+							strPort = "G" + (++a);
+						else
+							strPort = "XG" + (++b);
+					}
+					ports >>= 1;
+					gPorts >>= 1;
+				}
+				else {
+					strPort = "lag" + arr_lag_vlan_str.split(";")[i - cf.switch_port.value].split(":")[4];
+				}
+
+				if (cf.mode[i].value == "0")//access just check PVID
+				{
+					msg += checkInt(cf.allow_vlan[i], "端口" + strPort + " 允许通过的VLAN ", 1, 4094, true);
+				}
+				else if (cf.mode[i].value == "1")//trunk check PVID & VLAN LIST
+				{
+					if (cf.allow_vlan[i].value == "" || check_vlan_range(cf.allow_vlan[i], 1) == false)
+						msg += addstr(msg_vlan_allow_error, strPort, vlan_length);
+					else if (isNaN(cf.pvid[i].value) || !(check_pvid(cf.pvid[i], cf.allow_vlan[i]) || cf.pvid[i].value == cf.manage_vlan.value))
+						msg += addstr(msg_vlan_pvid_error, strPort);
+
+				}
+				else if (cf.mode[i].value == "2")//hybrid check ALL
+				{
+					if (cf.allow_vlan[i].value == "" || check_vlan_range(cf.allow_vlan[i], 1) == false)
+						msg += addstr(msg_vlan_allow_error, strPort, vlan_length);
+					else {
+						if (isNaN(cf.pvid[i].value) || check_pvid(cf.pvid[i], cf.allow_vlan[i]) == false)
+							msg += addstr(msg_vlan_pvid_error, strPort);
+					}
+					if (check_vlan_range(cf.no_tag_vlan[i], 2) == false)
+						msg += addstr(msg_vlan_tag_error, strPort);
+
+					//new add:check untag within allow vlan
+					if (check_untag_table(cf.no_tag_vlan[i], cf.allow_vlan[i]) == false)
+						msg += addstr(msg_vlan_tag_error_hybrid, strPort);
+				}
+
+			}
+
+			if (cf.h_trunk_enable.value == "enable") {
+				var tmp_str = cf.trunk_setting.value.split(";");
+				for (i = 0; i < tmp_str.length - 1; i++) {
+					if (tmp_str[i].split(":")[1] == "1") {
+						trunk_port |= tmp_str[i].split(":")[0];
+					}
+				}
+			}
+
+			if ("1" == cf.h_lacp_enable.value) {
+				for (i = 0; i < arr_lacp_port_cfg.length - 1; i++) {
+					if (arr_lacp_port_cfg[i].split(":")[2] == "1") {
+						trunk_port |= (1 << arr_lacp_port_cfg[i].split(":")[0] - 1);
+					}
+				}
+			}
+
+			var allow_vlan = "";
+			if (msg == "") {
+				i = 0;
+				for (i = 0; i < cf.pvid.length; i++) {
+					arr_tmp = null;
+					arr_tmp = arr_port_set[i].split(":");
+					if (cf.mode[i].value == "0")//access just check PVID
+					{
+						tmp_vlan_port_set += cf.allow_vlan[i].value + ":" + cf.mode[i].value + ":" + cf.allow_vlan[i].value + ":" + cf.allow_vlan[i].value + ";"
+					}
+					else if (cf.mode[i].value == "1")//trunk check PVID & VLAN LIST
+					{
+						//tmp_vlan_port_set += "1" + ":" + cf.mode[i].value + ":" + cf.allow_vlan[i].value + ":" + "1" + ";" 
+						//if manage vlan is not in allowed vlan for trunk,add it
+						if (check_pvid(cf.manage_vlan, cf.allow_vlan[i]) == false) {
+							allow_vlan = cf.allow_vlan[i].value + "," + cf.manage_vlan.value;
+						}
+						else {
+							allow_vlan = cf.allow_vlan[i].value;
+						}
+						tmp_vlan_port_set += cf.pvid[i].value + ":" + cf.mode[i].value + ":" + allow_vlan + ":" + cf.pvid[i].value + ";"
+					}
+					else if (cf.mode[i].value == "2")//hybrid check ALL
+					{
+						var tmp = "";
+						if (cf.no_tag_vlan[i].value == "") {
+							tmp = "0"
+						}
+						else {
+							tmp = cf.no_tag_vlan[i].value;
+						}
+						tmp_vlan_port_set += cf.pvid[i].value + ":" + cf.mode[i].value + ":" + cf.allow_vlan[i].value + ":" + tmp + ";"
+					}
+
+					if ((1 << i) & trunk_port) {
+						new_allow_vlan = get_port_qvlan(cf.allow_vlan[i].value);
+						old_allow_vlan = get_port_qvlan((cf.vlan_port_set.value + arr_lag_vlan_str).split(";")[i].split(":")[2]);
+
+						new_untag_vlan = get_port_qvlan(cf.no_tag_vlan[i].value);
+						if (0 == (cf.vlan_port_set.value + arr_lag_vlan_str).split(";")[i].split(":")[3])
+							old_untag_vlan = "";
+						else
+							old_untag_vlan = get_port_qvlan((cf.vlan_port_set.value + arr_lag_vlan_str).split(";")[i].split(":")[3]);
+
+						if (new_allow_vlan.length == old_allow_vlan.length) {
+							for (j = 0; j < new_allow_vlan.length; j++) {
+								if (new_allow_vlan[j] != old_allow_vlan[j]) {
+									msg += addstr(msa_qvlan_allow_trunk_conflict, i + 1);
+									break;
+								}
+							}
+						}
+						else {
+							msg += addstr(msa_qvlan_allow_trunk_conflict, i + 1);
+						}
+
+						if (new_untag_vlan.length == old_untag_vlan.length) {
+							for (j = 0; j < new_untag_vlan.length; j++) {
+								if (new_untag_vlan[j] != old_untag_vlan[j]) {
+									msg += addstr(msa_qvlan_untag_trunk_conflict, i + 1);
+									break;
+								}
+							}
+						}
+						else {
+							msg += addstr(msa_qvlan_untag_trunk_conflict, i + 1);
+						}
+
+						if ((cf.vlan_port_set.value + arr_lag_vlan_str).split(";")[i].split(":")[1] != cf.mode[i].value)
+							msg += addstr(msa_qvlan_mode_trunk_conflict, i + 1);
+					}
+
+				}
+			}
+
+			if (checkManageVlan() == false)
+				return false;
+
+			if (msg.length > 1) {
+				alert(msg);
+				return false;
+			}
+
+			return tmp_vlan_port_set;
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var vlan_entry = new Array();
+			var tmp_config = "";
+			var i = 0;
+			var vlan_lag_port_str = cf.vlan_lag_port_set.value.split(";");
+
+			if ((tmp_config = checkData_pre()) == false)
+				return false;
+			else {
+				cf.vlan_port_set.value = "";
+				cf.vlan_lag_port_set.value = "";
+				for (i = 0; i < cf.pvid.length; i++) {
+					if (i < cf.switch_port.value)
+						cf.vlan_port_set.value += tmp_config.split(";")[i] + ";";
+					else
+						vlan_lag_port_str[arr_lag_vlan_num[i - cf.switch_port.value]] = tmp_config.split(";")[i] + ":" + arr_lag_vlan_str.split(";")[i - cf.switch_port.value].split(":")[4];
+				}
+
+				for (i = 0; i < vlan_lag_port_str.length - 1; i++)
+					cf.vlan_lag_port_set.value += vlan_lag_port_str[i] + ";";
+			}
+
+			cf.h_manage_vlan.value = cf.manage_vlan.value;
+		}
+
+		function get_port_qvlan(str) {
+			var vlan = new Array();
+			var tmp_str = new Array();
+
+			if (isNaN(str)) {
+				var tmp_array = str.split(",");
+
+				for (j = 0; j < tmp_array.length; j++) {
+					if (isNaN(tmp_array[j])) {
+						tmp_str = tmp_array[j].split("-");
+						for (k = parseInt(tmp_str[0]); k <= parseInt(tmp_str[1]); k++)
+							vlan[k] = 1;
+					} else
+						vlan[parseInt(tmp_array[j])] = 1;
+				}
+			}
+			else
+				vlan[parseInt(str)] = 1;
+
+			return vlan;
+		}
+
+		function checkManageVlan() {
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+			var i = 0, j = 0;
+			var msg = "";
+			var vlanid_str = new Array();
+			var tmp_str = new Array();
+			var str;
+
+
+			for (i = 0; i < cf.pvid.length; i++) {
+				if ((cf.mode[i].value == "0") && (cf.manage_vlan.value == cf.allow_vlan[i].value))//access
+				{
+					return true;
+				}
+				else if ((cf.mode[i].value == "1") || (cf.mode[i].value == "2"))//trunk,hybrid,需特别处理"1,2,3","2-9"
+				{
+					vlanid_str = cf.allow_vlan[i].value.split(",");
+					for (j = 0; j < vlanid_str.length; j++) {
+						str = vlanid_str[j];
+						if (str.indexOf("-") > -1) {
+							tmp_str = vlanid_str[j].split("-");
+							if ((parseInt(tmp_str[0]) <= parseInt(cf.manage_vlan.value))
+								&& parseInt(cf.manage_vlan.value) <= parseInt(tmp_str[1]))
+								return true;
+						}
+
+						if (cf.manage_vlan.value == vlanid_str[j])
+							return true;
+					}
+
+				}
+			}
+
+			msg += msg_set_manage_vlan_error;
+
+			if (msg.length > 1) {
+				alert(msg);
+				return false;
+			}
+			else
+				return true;
+		}
+
+		function preview_vlan_table() {
+			var tmp_config = "";
+			var cf = document.forms[0];
+			var vlan_entry = new Array();
+			if ((tmp_config = checkData_pre()) == false)
+				return false;
+			vlan_entry = show_vlan_table_pre(tmp_config);
+			show_vlan_table_list(vlan_entry);
+
+		}
+
+		function show_vlan_table_pre(tmp_config) {
+			var cf = document.forms[0];
+			var port_str = new Array(), port_config = new Array(), port_invlan = new Array();
+			var vlan_entry = new Array();
+
+			port_str = tmp_config.split(";");
+			for (i = 0; i < port_str.length - 1; i++) {
+				port_config = port_str[i].split(":");
+				port_invlan[i] = port_config[2];
+			}
+
+			vlan_entry = transform(port_invlan);
+			return vlan_entry;
+		}
+
+		function show_vlan_table_list(vlan_entry) {
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var eth0_cpu_port = cf.eth0_cpu_port.value;
+			var cpu_port_enable = cf.cpu_port_enable.value;
+			var tmp_config;
+			var i = 0, j = 0, k = 0, a = 0, b = 0, lag_cnt = 0;
+			var port_str = new Array(), port_config = new Array(), port_invlan = new Array();
+			var vlan_config = new Array();
+			var str = "", strport = "";
+			var trunk_maps = 0;
+			var arr_trunk_setting = cf.trunk_setting.value.split(";");
+			var arr_lacp_port_cfg = cf.lacp_port_cfg.value.split(";");
+			var arr_lacp_group_cfg = cf.lacp_group_cfg.value.split(";");
+			var arr_trunk_map = new Array();
+
+			if ("enable" == cf.h_trunk_enable.value) {
+				for (i = 0; i < arr_trunk_setting.length - 1; i++) {
+					if (arr_trunk_setting[i].split(":")[1] == "1") {
+						trunk_maps |= arr_trunk_setting[i].split(":")[0];
+						arr_trunk_map[lag_cnt] = "LAG" + (i + 1);
+						lag_cnt++;
+					}
+				}
+			}
+
+			var lacp_status = cf.lacp_status.value.split(";");
+
+			if ("1" == cf.h_lacp_enable.value) {
+				for (i = 0; i < arr_lacp_group_cfg.length - 1; i++) {
+					if (arr_lacp_group_cfg[i].split(":")[3] == "1") {
+						if (lacp_status[i].split(":")[0] == "1") {
+							arr_trunk_map[lag_cnt] = "LAG" + (i + 1);
+							lag_cnt++;
+							for (j = 0; j < arr_lacp_port_cfg.length - 1; j++) {
+								if ((arr_lacp_port_cfg[j].split(":")[2] == "1") && (lacp_status[i].split(":")[1] & (1 << j))) {
+									trunk_maps |= (1 << arr_lacp_port_cfg[j].split(":")[0] - 1);
+								}
+							}
+						}
+						else {
+							continue;
+						}
+					}
+				}
+			}
+
+			while (cf.vlan_list.length > 1)
+				cf.vlan_list.remove(1);
+
+			for (i = 0; i < vlan_entry.length; i++) {
+				vlan_config = vlan_entry[i].split(":");
+				str = "----" + vlan_config[0];
+				for (j = fucCheckLength(vlan_config[0]); j < 16; j++)
+					str += "-";
+				if (j == 16)
+					str += "----------------  ";
+				a = 0;
+				b = 0;
+				j = 0;
+				var ports = cf.port_bits.value;
+				var gPorts = cf.g_port_bits.value;
+
+				while (ports) {
+					if (ports & 1) {
+
+						if (gPorts & 1)
+							strport = "G" + (++a);
+						else
+							strport = "XG" + (++b);
+						vlan_config[1] &= (~trunk_maps);
+
+						if ((vlan_config[1] & (1 << j)) && (!((cpu_port_enable == 1) && eth0_cpu_port == j)))
+							str += strport + "  ";
+						else {
+							if ((gPorts & 1) == 0) {
+								if (b < 10)
+									str += "---" + "  ";
+								else
+									str += "----" + "  ";
+							}
+							else {
+								if (a < 10)
+									str += "--" + "  ";
+								else
+									str += "---" + "  ";
+							}
+						}
+					}
+					j++;
+					ports >>= 1;
+					gPorts >>= 1;
+				}
+
+
+				for (k = 0; k < lag_cnt; k++) {
+					if (vlan_config[1] & 1 << (j + k)) {
+						str += arr_trunk_map[k] + "  ";
+					}
+					else {
+						str += "----" + "  ";
+					}
+				}
+				cf.vlan_list.options.add(new Option(str, vlan_config[0]));
+				cf.vlan_list.options[cf.vlan_list.options.length - 1].style.width = "1400px";
+				cf.vlan_list.options[cf.vlan_list.options.length - 1].style.padding = "0px";
+				cf.vlan_list.options[cf.vlan_list.options.length - 1].style.height = "18px";
+
+			}
+		}
+
+		function show_vlan_table() {
+			var cf = document.forms[0];
+			var vlan_entry = new Array();
+			vlan_entry = show_vlan_table_pre(cf.vlan_port_set.value + arr_lag_vlan_str);
+			show_vlan_table_list(vlan_entry);
+		}
+
+		function transform(port_invlan) {
+			var i = 0, j = 0, k = 0;
+			var str = "";
+			var tmp_array = new Array(), tmp_str = new Array();
+			var vlan = new Array(), vlan_entry = new Array();
+
+			for (i = 0; i < port_invlan.length; i++) {
+				str = port_invlan[i];
+				if (isNaN(str)) {
+					if (str.indexOf(","))
+						tmp_array = str.split(",");
+					for (j = 0; j < tmp_array.length; j++) {
+						if (isNaN(tmp_array[j])) {
+							tmp_str = tmp_array[j].split("-");
+							for (k = parseInt(tmp_str[0]); k <= parseInt(tmp_str[1]); k++)
+								vlan[k] |= 1 << i;
+						}
+						else {
+							vlan[parseInt(tmp_array[j])] |= 1 << i;
+						}
+					}
+				}
+				else {
+					vlan[parseInt(str)] |= 1 << i;
+				}
+			}
+
+			j = 0;
+			for (i = 0; i < vlan.length; i++) {
+				if (vlan[i])
+					vlan_entry[j++] = i + ":" + vlan[i];
+			}
+
+			return vlan_entry;
+		}
+
+		function check_vlan_range(obj, type) {
+			var cf = document.forms[0];
+			var str = obj.value;
+			var rule = /([1-9][0-9]*\,)*([1-9][0-9]*\-[1-9][0-9]*\,)*/;
+			var tmp_array = new Array(), tmp_str = new Array();
+			var i = 0, j = 0, num = 0;
+
+			if (str.length == 0) {
+				if (type == 1)
+					return false;
+				else if (type == 2)
+					return true;
+			}
+
+			if (!str.match(rule))
+				return false;
+
+			if (isNaN(str)) {
+				if ((str.substring(0, 1) == ",") || (str.substring(str.length - 1, str.length) == ","))
+					return false;
+				if ((str.substring(0, 1) == "-") || (str.substring(str.length - 1, str.length) == "-"))
+					return false;
+
+				tmp_array = str.split(",");
+				for (i = 0; i < tmp_array.length; i++) {
+					if (isNaN(tmp_array[i])) {
+						tmp_str = tmp_array[i].split("-");
+						if (tmp_str.length != 2)
+							return false;
+
+						if (isInteger(tmp_str[0], 1, 4094, false) == false)
+							return false;
+						if (isInteger(tmp_str[1], 1, 4094, false) == false)
+							return false;
+
+						if (parseInt(tmp_str[0]) > parseInt(tmp_str[1]))
+							return false;
+					}
+					else {
+						if (isInteger(tmp_array[i], 1, 4094, false) == false)
+							return false;
+					}
+				}
+
+			}
+			else {
+				if (isInteger(str, 1, 4094, false) == false)
+					return false;
+			}
+
+			return true;
+		}
+
+		function check_pvid(obj1, obj2) {
+			var cf = document.forms[0];
+			var pvid = obj1.value;
+			var allow = obj2.value;
+			var i = 0, j = 0;
+			var tmp_array = new Array(), tmp_str = new Array();
+			var flag = false;
+
+			if (isNaN(allow)) {
+				if (allow.indexOf(","))
+					tmp_array = allow.split(",");
+				for (i = 0; i < tmp_array.length; i++) {
+					if (isNaN(tmp_array[i])) {
+						tmp_str = tmp_array[i].split("-");
+						for (j = parseInt(tmp_str[0]); j <= parseInt(tmp_str[1]); j++) {
+							if (j == parseInt(pvid)) {
+								flag = true;
+								break;
+							}
+						}
+					}
+					else {
+						if (pvid == tmp_array[i])
+							flag = true;
+					}
+				}
+			}
+			else {
+				if (pvid == allow)
+					flag = true;
+			}
+
+			return flag;
+		}
+
+		function check_untag_table(obj1, obj2) {
+			var cf = document.forms[0];
+			var untag = obj1.value;
+			var i = 0, j = 0;
+			var tmp_array = new Array(), tmp_str = new Array();
+			var flag = true;
+
+			var cf_tmp = {
+				value: 0
+			};
+
+			if (untag == "")
+				return true;
+			else if (isNaN(untag)) {
+				if (untag.indexOf(","))
+					tmp_array = untag.split(",");
+				for (i = 0; i < tmp_array.length; i++) {
+					if (isNaN(tmp_array[i])) {
+						tmp_str = tmp_array[i].split("-");
+						for (j = parseInt(tmp_str[0]); j <= parseInt(tmp_str[1]); j++) {
+							cf_tmp.value = j;
+							if (!check_pvid(cf_tmp, obj2)) {
+								flag = false;
+								break;
+							}
+						}
+					}
+					else {
+						cf_tmp.value = tmp_array[i];
+						if (!check_pvid(cf_tmp, obj2)) {
+							flag = false;
+							break;
+						}
+					}
+				}
+			}
+			else {
+				if (!check_pvid(obj1, obj2))
+					flag = false;
+			}
+
+			return flag;
+		}
+
+	</script>
+
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+								<a href="https://milkv.io/">
+									<span class="showbtn3">网站</span>
+								</a>
+								<a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a
+									href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span
+										class="showbtn5">&times;</span></a><br><span class="style6">访问IP地址：@clinet_ip#
+									&nbsp;MAC地址：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td width="271" height="25" class="table_title"><strong
+									class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+									class="style4">二层特性</span><strong class="style4">&gt;&gt;</strong><span
+									class="style3">VLAN配置</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8" style="display: none;">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+
+			<tr align="left" valign="top" style="display: none;">
+				<td height="25" align="left">
+					<table width="1002" align="center" cellpadding="0" cellspacing="1">
+						<tr align="left" valign="top" class="table_enable">
+							<td height="25" width="147" valign="middle">&nbsp;&nbsp;VLAN类型</td>
+							<td height="25" colspan="2" align="left" valign="middle">&nbsp;
+								<input type="radio" name="vlan_type" value="qvlan" autocomplete="off"
+									onClick="set_vlan_type()">
+								IEEE 802.1Q VLAN
+							</td>
+						</tr>
+					</table>
+				</td>
+
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="1" id="qvlan_table">
+			<tr height="8" width="1001">
+				<td width="1001" colspan="5">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="left">
+					<table width="1002" align="center" cellpadding="0" cellspacing="1">
+						<tr>
+							<td align="left" height="25" class="td2" colspan="5">&nbsp;&nbsp;IEEE 802.1Q VLAN</td>
+						</tr>
+						<tr>
+							<td width="200" height="25" align="left" class="table_left">&nbsp;&nbsp;管理VLAN</td>
+							<td width="797" class="table_right">&nbsp;&nbsp;
+								<input align="center" style="color:#000000" name="manage_vlan" class="input_txt"
+									maxlength="4">
+								<span>（VLAN范围：1~4094）</span>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">端口号</td>
+							<td width="10%" height="25" align="center" valign="middle">PVID</td>
+							<td width="10%" height="25" align="center" valign="middle">端口模式</td>
+							<td width="35%" height="25" align="center" valign="middle">允许通过的VLAN列表<br><span
+									style="font-size:10px;">(VLAN范围:1~4094，VLAN之间用&quot;,&quot;分隔，&quot;-&quot;表示VLAN
+									ID范围，如1,2,3-6)</span></td>
+							<td width="35%" height="25" align="center" valign="middle">出口不打标记的VLAN列表<br><span
+									style="font-size:10px;">(VLAN范围:1~4094，VLAN之间用&quot;,&quot;分隔，&quot;-&quot;表示VLAN
+									ID范围，如1,2,3-6)</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table id="portlist" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="button" name="show" value="查看当前配置的VLAN表" onClick="preview_vlan_table()"
+							class="showbtn6">&nbsp;
+						<input type="Submit" name="save" value="配置" onClick="return checkData();"
+							class="showbtn6">&nbsp;
+						<input type="button" name="cancel" value="取消"
+							onClick="location.href='setup.cgi?next_file=vlan.html'" class="showbtn6">&nbsp;
+					</span>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td><select name="vlan_list" size="19" id="uselect"
+						style="overflow-x: scroll;width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+						<option value="0">
+							----VLAN组--------------------------端口列表---------------------------------------------------------------------------------------------------------------
+						</option>
+					</select></td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+
+		</table>
+
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="vlan.html">
+		<input type="hidden" name="next_file" value="vlan.html">
+
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="switch_type" value="@switch_type#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="port_num" value="@port_num#">
+
+		<input type="hidden" name="h_vlan_type" value="@h_vlan_type#">
+		<input type="hidden" name="h_manage_vlan" value="@h_manage_vlan#">
+		<input type="hidden" name="vlan_p_config" value="@vlan_p_config#">
+		<input type="hidden" name="vlan_port_set" value="@vlan_port_set#">
+		<input type="hidden" name="vlan_lag_port_set" value="@vlan_lag_port_set#">
+		<input type="hidden" name="rd_code" value="@rd_code#">
+		<input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+		<input type="hidden" name="trunk_setting" value="@trunk_setting#">
+		<input type="hidden" name="h_erps_enable" value="@h_erps_enable#">
+		<input type="hidden" name="erps_ring_config" value="@erps_ring_config#">
+		<input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+		<input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+		<input type="hidden" name="lacp_group_cfg" value="@lacp_group_cfg#">
+		<input type="hidden" name="eth0_cpu_port" value="@eth0_cpu_port#">
+		<input type="hidden" name="cpu_port_enable" value="@cpu_port_enable#">
+		<input type="hidden" name="lacp_status" value="@lacp_status#">
+	</form>
+</body>
+
+</html>

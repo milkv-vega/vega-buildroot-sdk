@@ -1,0 +1,408 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>IGMP Snooping</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		< !-
+			function loadXMLDoc(url) //基于AJAX 的无刷方式请求建立XMLHttpRequest 对象
+			{
+				xmlhttp = null;
+				if (window.XMLHttpRequest) {
+					xmlhttp = new XMLHttpRequest();
+				}
+				else if (window.ActiveXObject) {
+					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+				}
+				if (xmlhttp != null) {
+					xmlhttp.open("GET", url, true);
+
+					xmlhttp.onreadystatechange = speed_Change;
+					xmlhttp.setRequestHeader("If-Modified-Since", "0");
+					xmlhttp.send(null);
+
+				}
+				else {
+					alert("Your browser does not support XMLHTTP.");
+				}
+			}
+
+		function speed_Change() {
+			if (xmlhttp.readyState == 4) {
+				if (xmlhttp.status == 200) {
+					alert("The resource is busy,please try again later！\n");
+					return true;
+				}
+
+				checkData();
+			}
+		}
+
+		function init() {
+			var cf = document.forms[0];
+			var umac = new Array();
+			var i, t = 0, tmp = "", a = 0, b = 0, n = 0, count = 0;
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var objTb = document.getElementById("portlist");
+			var objTr1, objTr2, objTmp;
+			var flag = true;
+			var strPort;
+
+			show_language_flag();
+			comCreateElement(ports, gPorts, objTb, "checkbox", "igmp_port", undefined, "igmp_port", undefined, "margin-bottom:2px", 1, undefined, 1);
+			a = 0; i = 0; ports = cf.port_bits.value;
+			while (ports) {
+				if (ports & 1) {
+					if (cf.snoop_port.value & (1 << i))
+						cf.igmp_port[a].checked = true;
+					a++;
+				}
+				ports >>= 1;
+				i++;
+			}
+			ports = cf.port_bits.value;
+			if (parseInt(cf.snoop_port.value & ports) == ports)
+				cf.check_all.value = "Cancel";
+			else
+				cf.check_all.value = "Check All";
+
+			cf.multimac_list.value = cf.multimac_list.value.toUpperCase();
+			umac = cf.multimac_list.value.split(";");
+			var n = 0;
+			while (t < (umac.length - 1)) {
+				var mac = new Array();
+				mac = umac[t].split(":");
+				var mac_bits = (parseInt(mac[1]) & 0xFFFFFF);
+
+				if (mac_bits == 0) {
+					t++;
+					continue;
+				}
+
+				tmp = "---" + (n + 1);
+				for (i = fucCheckLength(tmp); i < 7; i++)
+					tmp += "-";
+				if (i == 7)
+					tmp += "--------";
+
+				tmp += mac[0].substring(0, 2) + "-" + mac[0].substring(2, 4) + "-" + mac[0].substring(4, 6)
+					+ "-" + mac[0].substring(6, 8) + "-" + mac[0].substring(8, 10) + "-" + mac[0].substring(10, 12);
+				tmp += "----------";
+
+				if (mac[3] == 1)
+					tmp += "fixed-------";
+				else
+					tmp += "learning-----";
+
+				tmp += "----------";
+
+				tmp += mac[2];
+				for (i = mac[2].length; i < 4; i++)
+					tmp += "-";
+				tmp += "--------";
+
+				ports = cf.port_bits.value;
+				gPorts = cf.g_port_bits.value;
+				a = 0; b = 0; i = 0;
+
+				while (ports) {
+					if (ports & 1) {
+						if (gPorts & 1)
+							strPort = "G" + (++a);
+						else
+							strPort = "XG" + (++b);
+						if (mac_bits & 1)
+							tmp += (strPort + " ");
+					}
+					i++;
+					ports >>= 1;
+					gPorts >>= 1;
+					mac_bits >>= 1;
+				}
+				cf.forward_list.options.add(new Option(tmp, mac[0]));
+				t++;
+				n++;
+			}
+			dataToVisible(cf);
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+			else
+				setSnooping();
+		}
+
+		function setSnooping() {
+			var i;
+			var cf = document.forms[0];
+			var dflage = (getRadioCheckedValue(cf.snoop_enable) == "disable");
+
+			setDisabled(dflage, cf.querier_enable[0], cf.querier_enable[1]);
+			setQuery();
+			setDisabled(dflage, cf.snoop_age);
+			for (i = 0; i < cf.igmp_port.length; i++)
+				setDisabled(dflage, cf.igmp_port[i]);
+			setDisabled(dflage, cf.check_all);//de.s modified for button control 2010.03.30
+		}
+
+		function setQuery() {
+			var i;
+			var cf = document.forms[0];
+			var dflag = (getRadioCheckedValue(cf.snoop_enable) == "disable");
+			var dflag1 = (getRadioCheckedValue(cf.querier_enable) == "disable");
+
+			if ((dflag == true) || (dflag1 == true))
+				dflag = true;
+
+			setDisabled(dflag, cf.snoop_interval);
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+
+			setDisabled(true, cf.snoop_enable[0], cf.snoop_enable[1]);
+			setDisabled(true, cf.querier_enable[0], cf.querier_enable[1]);
+			setDisabled(true, cf.snoop_interval, cf.snoop_age);
+			setDisabled(true, cf.Save, cf.Cancel);
+			setDisabled(true, cf.check_all);//de.s modified for button control 2010.03.30
+			for (var i = 0; i < cf.igmp_port.length; i++)
+				setDisabled(true, cf.igmp_port[i]);
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var msg = "", port_maps = 0;
+			var a, i;
+			var ports = cf.port_bits.value;
+
+			var dflag = (getRadioCheckedValue(cf.snoop_enable) == "disable");
+			var dflag1 = (getRadioCheckedValue(cf.querier_enable) == "disable");
+
+			if ((dflag == false) && (dflag1 == false))
+				msg += checkInt(cf.snoop_interval, msg_igmp_interval, 60, 1000, true);
+
+			if (dflag == false)
+				msg += checkInt(cf.snoop_age, msg_igmp_age, 120, 5000, true);
+
+			if ((dflag == false) && (dflag1 == false) && parseInt(cf.snoop_interval.value) > parseInt(cf.snoop_age.value))
+				msg += "Query Interval should be equal or less than Group Members Aging Time,please confirm!";
+
+			a = 0; i = 0;
+			while (ports) {
+				if (ports & 1) {
+					if (cf.igmp_port[a].checked == true)
+						port_maps |= 1 << cf.igmp_port[a].value;
+					a++;
+				}
+				ports >>= 1;
+				i++;
+			}
+
+			cf.snoop_port.value = port_maps;
+
+			dataToHidden(cf);
+			if (!checkMsg(msg))
+				return false;
+
+			cf.submit();
+		}
+
+		function checkAllPorts() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			if (cf.check_all.value == "Check All") {
+				cf.check_all.value = "Cancel";
+				for (i = 0; i < cf.igmp_port.length; i++)
+					cf.igmp_port[i].checked = true;
+			}
+			else {
+				cf.check_all.value = "Check All";
+				for (i = 0; i < cf.igmp_port.length; i++)
+					cf.igmp_port[i].checked = false;
+			}
+		}
+		//-->
+	</script>
+</head>
+
+<body style="margin: 0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a>
+								<a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn3">中文版</span></a>
+								<a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+										class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr class="table_title">
+							<td width="383" height="25">
+								<strong class="style4">&nbsp;&nbsp;Current Page &gt;&gt;</strong><span class="style4">
+									Link Layer </span><strong class="style4">&gt;&gt;</strong><span class="style3"> IGMP
+									Snooping</span>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="left">
+					<table width="1002" height="25" align="center" cellpadding="0" cellspacing="0">
+						<tr align="left" valign="top" class="table_enable">
+							<td height="25" width="150" valign="middle">&nbsp;&nbsp;IGMP Snooping</td>
+							<td width="869" height="25" colspan="9" align="left" valign="middle">
+								&nbsp;
+								<input type="radio" name="snoop_enable" value="enable" autocomplete="off"
+									onClick="setSnooping()">
+								Enable &nbsp;
+								<input type="radio" name="snoop_enable" value="disable" autocomplete="off"
+									onClick="setSnooping()">
+								Disable
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="25%" height="25" class="table_left">&nbsp;&nbsp;IGMP Query</td>
+							<td width="75%" height="25" class="table_right">
+								&nbsp;
+								<input type="radio" name="querier_enable" value="enable" autocomplete="off"
+									onClick="setQuery()" />
+								Enable &nbsp;
+								<input type="radio" name="querier_enable" value="disable" autocomplete="off"
+									onClick="setQuery()" />
+								Disable
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;IGMP Query Interval</td>
+							<td height="25" class="table_right">&nbsp;<input type="text" name="snoop_interval"
+									maxlength="4" class="input_txt" value="@snoop_interval#">
+								s (valid 60-1000)
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;Group Members Aging Time</td>
+							<td height="25" class="table_right">&nbsp;<input type="text" name="snoop_age" maxlength="4"
+									class="input_txt" value="@snoop_age#">
+								s (valid 120-5000)
+							</td>
+						</tr>
+						<tr style="display:none">
+							<td height="25" class="table_left">&nbsp;&nbsp;Unkown Multicast Forwarding List</td>
+							<td height="25" class="table_right">
+								<table border="0" cellspacing="0" id="portlist"></table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="1002" border="0" cellspacing="0" cellpadding="0">
+						<tr class="td11">
+							<td colspan="7"><select name="forward_list" size="25" id="uselect"
+									style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+									<option value="0">
+										--SN-----------------MAC-----------------TYPE--------------------VID-------PORT----------------------------------------------------------------------------------------------------
+									</option>
+								</select></td>
+						</tr>
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+						<input type="button" name="Save" value="Save"
+							onClick="return loadXMLDoc('/tmp/multicast_delall');" class="showbtn6">&nbsp;
+						<input type="button" name="Refresh" value="Refresh"
+							onClick="location.href='setup.cgi?next_file=igmp_en.html'" class="showbtn6">&nbsp;
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=igmp_en.html'" class="showbtn6">
+					</span>
+				</td>
+			</tr>
+			</td>
+			</tr>
+		</table>
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="h_snoop_enable" value="@h_snoop_enable#">
+		<input type="hidden" name="h_querier_enable" value="@h_querier_enable#">
+		<input type="hidden" name="snoop_port" value="@snoop_port#">
+		<input type="hidden" name="multimac_list" value="@multimac_list#">
+		<input type="hidden" name="staticmac" value="@staticmac#">
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="igmp_en.html">
+		<input type="hidden" name="next_file" value="igmp_en.html">
+		<input type="hidden" name="message" value="@msg_text#">
+		<input type="hidden" name="switch_type" value="@switch_type#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+	</form>
+</body>
+
+</html>

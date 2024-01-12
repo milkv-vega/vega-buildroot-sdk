@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>Send Frame Statistics</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css">
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="JavaScript">
+		function init() {
+			var cf = document.forms[0];
+
+			if (cf.loader.value != "admin") {
+				cf.Cancel.style.disabled = "true";
+				cf.Refresh.style.disabled = "true";
+			}
+		}
+	</script>
+</head>
+
+<body style="margin:0" onLoad='show_language_flag()'>
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF">
+							</td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a>
+								<a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a>
+								<a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+										class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr class="table_title">
+							<td width="355" height="25">
+								<strong class="style4">&nbsp;&nbsp;Current Page &gt;&gt;</strong><span class="style4">
+									Statistics </span>
+								<strong class="style4">&gt;&gt;</strong><span class="style3"> Send Frame
+									Statistics</span>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="left">
+					<table width="1002" border="0" align="center" cellpadding="0" cellspacing="1" id="portlist">
+						<tr align="center" valign="middle" class="td2">
+							<td height="25" width="30">
+								<div align="center">Port</div>
+							</td>
+							<td width="81">
+								<div align="center">ALL</div>
+							</td>
+							<td width="81">
+								<div align="center">Right</div>
+							</td>
+							<td width="81">
+								<div align="center">Control</div>
+							</td>
+							<td width="81">
+								<div align="center">Unicast</div>
+							</td>
+							<td width="81">
+								<div align="center">Multicast</div>
+							</td>
+							<td width="81">
+								<div align="center">Broadcast</div>
+							</td>
+							<td width="81">
+								<div align="center">Pause</div>
+							</td>
+							<td width="81">
+								<div align="center">Undersize</div>
+							</td>
+							<td width="81">
+								<div align="center">Fragments</div>
+							</td>
+							<td width="81">
+								<div align="center">Oversize</div>
+							</td>
+							<td width="81">
+								<div align="center">Jabbers</div>
+							</td>
+							<td width="81">
+								<div align="center">Normal-size Errors</div>
+							</td>
+						</tr>
+						@total_tx_statis#
+					</table>
+				</td>
+			</tr>
+			<tr valign="middle">
+				<td height="8" width="1001" colspan="10" align="center">
+					<hr size="1">
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="submit" name="Cancel" value="Clear" class="showbtn7">
+						<input type="button" name="Refresh" value="Refresh" class="showbtn7"
+							onClick="location.href='setup.cgi?next_file=tx_en.html'">
+					</span>
+				</td>
+			</tr>
+		</table>
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="this_file" value="tx_en.html">
+		<input type="hidden" name="next_file" value="tx_en.html">
+	</form>
+</body>
+
+</html>

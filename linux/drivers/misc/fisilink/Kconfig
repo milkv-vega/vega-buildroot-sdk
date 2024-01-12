@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Fislink misc device configuration
+#
+
+config SWITCH_INTERFACE
+	tristate "access switch regs support"
+	depends on FISILINK
+	default y
+	help
+	  This driver provides support for the xuanyuan1030M cpu access switch regs.

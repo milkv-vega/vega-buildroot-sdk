@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>Reconfiging...</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<!--<META HTTP-EQUIV="pragma" CONTENT="no-cache"> 
+<META HTTP-EQUIV="Cache-Control" CONTENT="no-cache, must-revalidate"> 
+<META HTTP-EQUIV="expires" CONTENT="Wed, 26 Feb 1997 08:21:57 GMT"> -->
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		//-----hubo 2014.4.2  rewrite---------------------------------------------------------------
+		< !-
+		var showit = (document.layers) ? "show" : "visible";
+		var hideit = (document.layers) ? "hide" : "hidden";
+		var time = 0;
+		var time_count = 0;
+		var pc = 0;
+		var count_num = 0;
+		var back_page = @index_page#;
+		var time_out = 200;
+		var run = 0;
+		var xmlhttp;
+		var flag = false;
+		var flag_has_reboot = false;
+		var is_ip_flag = false;
+		var bar = 0; //进度条的进度 
+		var line = "||"; //类似进度条的符坷 
+		var amount = "||";
+
+		function loadXMLDoc(url) //基于AJAX 的无刷方弝请求建立XMLHttpRequest 对象
+		{
+			xmlhttp = null;
+			if (window.XMLHttpRequest) {// code for IE7, Firefox, Opera, etc.
+				xmlhttp = new XMLHttpRequest();
+			}
+			else if (window.ActiveXObject) {// code for IE6, IE5
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			if (xmlhttp != null) {
+				xmlhttp.open("GET", url, true);
+				xmlhttp.onreadystatechange = state_Change;
+
+				xmlhttp.setRequestHeader("If-Modified-Since", "0");
+				xmlhttp.send(null);
+			}
+			else {
+				alert("Your browser does not support XMLHTTP.");
+			}
+		}
+
+		function state_Change() {
+			if (xmlhttp.readyState == 4) {// 4 = "loaded"
+				if (xmlhttp.status == 200) {// 200 = "OK"
+					if (xmlhttp.responseText == "<?xml version='1.0' encoding='ISO-8859-1'?><note><to>0</to></note>" || xmlhttp.responseText == "<?xml version='1.0' encoding='ISO-8859-1'?><note><to>1</to></note>" || xmlhttp.responseText == "<?xml version='1.0' encoding='ISO-8859-1'?><note><to>2</to></note>") {
+						document.getElementById('A3').innerHTML = addstr(msg_upgrade_status, xmlhttp.responseText);
+					}
+					else if (xmlhttp.responseText == "<?xml version='1.0' encoding='ISO-8859-1'?><note><to>3</to></note>") {
+						flag = true;
+						document.getElementById('A3').innerHTML = msg_set_for_reboot;
+						if (is_ip_flag)
+							document.getElementById('A3').innerHTML = "Configuring...Waiting";
+					}
+					else if (xmlhttp.responseText == "<?xml version='1.0' encoding='ISO-8859-1'?><note><to>4</to></note>") {
+						if (flag == true) {
+							flag_has_reboot = true;
+						}
+						else {
+							flag_has_reboot = false;
+							document.getElementById('A3').innerHTML = "Loading...";
+						}
+					}
+					else if (xmlhttp.responseText == "<?xml version='1.0' encoding='ISO-8859-1'?><note><to>-1</to></note>") {
+						document.getElementById('A3').innerHTML = "Loading.......";
+						if (is_ip_flag)
+							document.getElementById('A3').innerHTML = "Configuring...Waiting";
+					}
+				}
+				else//无法建立连接�?
+				{
+					flag = true;
+					document.getElementById('A3').innerHTML = msg_set_for_reboot;
+					if (is_ip_flag)
+						document.getElementById('A3').innerHTML = "Configuring...Waiting";
+				}
+			}
+		}
+
+		function load() {
+			var cf = document.forms[0];
+			var iptype;
+			var last_file;
+			var dhcp_ip;
+
+			iptype = cf.h_bridged_dhcpenable.value;
+			last_file = cf.last_file.value;
+			dhcp_ip = cf.dhcp_ip.value;
+
+			show_language_flag();
+			if (dhcp_ip == "0") {
+				alert(msg_no_ip);
+				time_out = 0;
+				top.location = 'http://' + cf.lan_ip.value + '/';
+				clearTimeout(time);
+				return;
+			}
+
+			if (last_file == "config_en.html") {
+				if (iptype == "fixedip")
+					time_out = 1000;
+				else
+					time_out = 1050;
+			} else if (last_file == "backup_en.html") {
+				flag = true;
+				document.getElementById('A3').innerHTML = msg_set_for_reboot;
+				if (iptype == "fixedip")
+					time_out = 1000;
+				else
+					time_out = 1050;
+			}
+			else {
+				flag = true;
+				is_ip_flag = true;
+				document.getElementById('A3').innerHTML = "Configuring...Waiting";
+				if (iptype == "fixedip")
+					time_out = 100;
+				else
+					time_out = 150;
+			}
+			load_time();
+			_Count();
+			//count();
+		}
+
+		function load_time() {
+			if (!flag) {
+				loadXMLDoc('/tmp/tmp_xml.xml');
+				time = setTimeout("load_time()", time_out);
+			}
+			else {
+				loadXMLDoc('/tmp/tmp_xml.xml');
+				pc += 1;
+				if (pc > 80 || flag_has_reboot) {
+					top.location = back_page;
+					clearTimeout(time);
+					return;
+				}
+				time = setTimeout("load_time()", time_out);
+			}
+		}
+
+		function _Count()//以防万一风暴或�?�其他情况下没有获得flag
+		{
+			count_num += 1;
+			if (count_num > 180) {
+				top.location = back_page;
+				clearTimeout(time_count);
+				return;
+			}
+			time_count = setTimeout(" _Count()", 1000);
+		}
+
+
+		function count() {
+			var cf = document.forms[0];
+			bar = bar + 2;
+			amount = amount + line;
+			cf.progress.value = amount;
+			if (bar < 350)
+				setTimeout("count()", 100);
+			else {
+				bar = 0;
+				amount = "||";
+				count();
+			}
+		}
+
+		//-->
+	</script>
+</head>
+
+<body style="margin:0" onLoad="load();">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<!--<script language="JavaScript1.2">init_menu();</script>-->
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr class="table_title">
+							<td width="378" height="25"><strong class="style4">&nbsp;&nbsp;Current Page
+									&gt;&gt;</strong><span class="style4"> System Management </span><strong
+									class="style4">&gt;&gt; Reconfigure</strong></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td align="center" valign="top" height="15" bgcolor="#FFFFFF"><br>
+					<object id="FlashID" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="800" height="20">
+						<param name="movie" value="images/loading4.swf">
+						<param name="quality" value="high">
+						<param name="wmode" value="opaque">
+						<param name="swfversion" value="6.0.65.0">
+						<param name="expressinstall" value="Scripts/expressInstall.swf">
+						<!--[if !IE]>-->
+						<object type="application/x-shockwave-flash" data="images/loading4.swf" width="500" height="20">
+							<!--<![endif]-->
+							<param name="quality" value="high">
+							<param name="wmode" value="opaque">
+							<param name="swfversion" value="6.0.65.0">
+							<param name="expressinstall" value="Scripts/expressInstall.swf">
+							<div>
+								<h4>Need Adobe Flash Player</h4>
+							</div>
+							<!--[if !IE]>-->
+						</object>
+						<!--<![endif]-->
+					</object> <br>
+				</td>
+			</tr>
+			<tr>
+				<td width="1001">
+					<div align="center"><strong><span id="A3" class="style4"></span></strong></div><br>
+				</td>
+			</tr>
+			<tr>
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+
+		</table>
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input name="h_bridged_dhcpenable" value="@h_bridged_dhcpenable#" type="hidden">
+		<input name="lan_ip" value="@lan_ip#" type="hidden">
+		<input name="last_file" value="@last_file#" type="hidden">
+		<input name="dhcp_ip" value="@dhcp_ip#" type="hidden">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="reboot_en.html">
+		<input type="hidden" name="next_file" value="index.htm">
+		<input type="hidden" name="message" value="@msg_text#">
+	</form>
+	<script type="text/javascript">
+		//swfobject.registerObject("FlashID");
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Rate Control</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        function init() {
+            var cf = document.forms[0];
+            var i = 0, n = 0, j = 0;
+            var objTbIngress = document.getElementById("portIngressList");
+            var objTbEgress = document.getElementById("portEgressList");
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var port_stat = cf.port_status.value.split(";");
+            var arrType = new Array();
+            var arrName = new Array();
+            var arrClassName = new Array();
+            var arrValue = new Array();
+            var arrText = new Array();
+            var arrValue_XG = new Array();
+            var arrText_XG = new Array();
+            arrType[0] = "select"; arrName[0] = "ingress"; arrClassName[0] = "select1";
+            show_language_flag();
+            comCreateTableElementById(4, ports, gPorts, objTbIngress, arrType, arrName, arrClassName);
+            arrType[0] = "select"; arrName[0] = "egress"; arrClassName[0] = "select1";
+            comCreateTableElementById(4, ports, gPorts, objTbEgress, arrType, arrName, arrClassName);
+            //for 1000M port
+            for (i = 0; i < 33; i++) {
+                if (i < 10)
+                    arrValue[i] = "0" + i;
+                else
+                    arrValue[i] = i;
+
+                if (i == 0)
+                    arrText[i] = "NO LIMIT";
+                else if (i == 1)
+                    arrText[i] = 64;
+                else if (i > 1 && i < 5)
+                    arrText[i] = arrText[i - 1] * 2;
+                else if (i == 5)
+                    arrText[i] = 1;
+                else if (i > 5 && i <= 14)
+                    arrText[i] = arrText[i - 1] + 1;
+                else if (i > 14 && i <= 23)
+                    arrText[i] = arrText[i - 1] + 10;
+                else if (i > 23 && i <= 32)
+                    arrText[i] = arrText[i - 1] + 100;
+
+                if (i == 5) {
+                    for (j = 1; j < i; j++)
+                        arrText[j] += "K";
+                } else if (i == 32) {
+                    for (j = 5; j <= i; j++)
+                        arrText[j] += "M";
+                }
+            }
+
+            //for 10G port
+
+            for (i = 0; i < 42; i++) {
+                if (i < 10)
+                    arrValue_XG[i] = "0" + i;
+                else
+                    arrValue_XG[i] = i;
+
+                if (i == 32)
+                    arrText_XG[i] = 1;
+                else if (i > 32 && i < 42)
+                    arrText_XG[i] = arrText_XG[i - 1] + 1;
+
+                if (i == 32) {
+                    for (j = 0; j < i; j++)
+                        arrText_XG[j] = arrText[j];
+                } else if (i == 41) {
+                    for (j = 32; j <= i; j++)
+                        arrText_XG[j] += "G";
+                }
+            }
+
+            n = 0;
+            while (ports) {
+                if (ports & 1) {
+                    if (gPorts & 1) {
+                        comCreateTdElementById(cf.ingress, n, n, 2, "", "", "", arrValue, arrText);
+                        comCreateTdElementById(cf.egress, n, n, 2, "", "", "", arrValue, arrText);
+                    }
+                    else {
+                        comCreateTdElementById(cf.ingress, n, n, 2, "", "", "", arrValue_XG, arrText_XG);
+                        comCreateTdElementById(cf.egress, n, n, 2, "", "", "", arrValue_XG, arrText_XG);
+                    }
+                }
+                n++;
+                ports >>= 1;
+                gPorts >>= 1;
+            }
+            dataToVisible(cf);
+            RemoveItem();//新添加
+
+            i = 0; ports = cf.port_bits.value; n = 0;
+            while (ports) {
+                if (ports & 1) {
+                    if ((port_stat[n].substring(0, 1)) == 1) {
+                        if (parseInt(cf.ingress_policy.value.substring(i * 2, i * 2 + 2)) > 14)
+                            cf.ingress[n].value = "00";
+                        else
+                            cf.ingress[n].value = cf.ingress_policy.value.substring(i * 2, i * 2 + 2);
+
+                        if (parseInt(cf.egress_policy.value.substring(i * 2, i * 2 + 2)) > 14)
+                            cf.egress[n].value = "00";
+                        else
+                            cf.egress[n].value = cf.egress_policy.value.substring(i * 2, i * 2 + 2);
+                    }
+                    else {
+                        cf.ingress[n].value = cf.ingress_policy.value.substring(i * 2, i * 2 + 2);
+                        cf.egress[n].value = cf.egress_policy.value.substring(i * 2, i * 2 + 2);
+                    }
+                    n++;
+                }
+                i++;
+                ports >>= 1;
+            }
+
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+            else
+                set_rate();
+        }
+
+
+        function set_rate() {
+            var i, n;
+            var cf = document.forms[0];
+            var ports = cf.port_bits.value;
+            var port_stat = cf.port_status.value.split(";");
+
+            var dflag = (getRadioCheckedValue(cf.rate_enable) == "disable");
+
+            i = 0; n = 0;
+            while (ports) {
+                if (ports & 1) {
+                    if (port_stat[n].substring(2, 3) == 0)
+                        setDisabled(true, cf.ingress[i], cf.egress[i]);//新添加：端口启用与带宽控制对应
+                    else
+                        setDisabled(dflag, cf.ingress[i], cf.egress[i]);
+                    i++;
+                }
+                ports >>= 1;
+                n++;
+            }
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+            var i;
+
+            setDisabled(true, cf.rate_enable[0], cf.rate_enable[1]);
+            setDisabled(true, cf.Save, cf.Cancel);
+            for (i = 0; i < cf.ingress.length; i++)
+                setDisabled(true, cf.ingress[i], cf.egress[i]);
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var ingress = "", egress = "";
+            var ports = cf.port_bits.value;
+            var i, n;
+
+            i = 0;
+            for (n = 0; n < cf.switch_port.value; n++) {
+                if (ports & 1) {
+                    ingress += cf.ingress[i].value;
+                    egress += cf.egress[i].value;
+                    i++;
+                } else {
+                    ingress += "00";//不受限制
+                    egress += "00";
+                }
+                ports >>= 1;
+            }
+
+            cf.ingress_policy.value = ingress;
+            cf.egress_policy.value = egress;
+
+            dataToHidden(cf);;
+
+            return true;
+        }
+
+        function RemoveItem() {
+            //////////////////////////////////////////////////////////
+            var t = 0, i = 0;
+            var cf = document.forms[0];
+            var port_stat = cf.port_status.value.split(";");
+            var ports = cf.port_bits.value;
+
+            //test
+            //port_stat = "0000000000000000000000000000000000000000000000000000";
+            //test
+            while (ports) {
+                if (ports & 1) {
+                    if ((port_stat[t].substring(0, 1)) == 1) {
+                        var m = cf.ingress[i].options.length;
+                        while (m > 15) {
+                            m--;
+                            cf.ingress[i].options.remove(m);
+                            cf.egress[i].options.remove(m);
+                        }
+                    }
+                    else if ((port_stat[t].substring(0, 1)) == 2) {
+                        var m = cf.ingress[i].options.length;
+                        while (m > 24) {
+                            m--;
+                            cf.ingress[i].options.remove(m);
+                            cf.egress[i].options.remove(m);
+                        }
+                    }
+                    i++;
+                }
+                ports >>= 1;
+                t++;
+            }
+            /////////////////////////////////////////////////////////////
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr class="table_title">
+                            <td width="425" height="25">
+                                <strong class="style4">&nbsp;&nbsp;Current Page &gt;&gt;</strong><span class="style4">
+                                    Port Config </span><strong class="style4">&gt;&gt;</strong><span class="style3">
+                                    Rate Control</span>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1001" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;Rate Control</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="radio" name="rate_enable" value="enable" onClick="set_rate()">
+                                Enable
+                                &nbsp;
+                                <input type="radio" name="rate_enable" value="disable" onClick="set_rate()">
+                                Disable
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1001" height="25" align="center" cellpadding="0" cellspacing="0">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;Entrance Speed Configure</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0"
+                        style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+                        <tr class="td2">
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Entrance Speed</td>
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Entrance Speed</td>
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Entrance Speed</td>
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Entrance Speed</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" id="portIngressList">
+                    </table>
+                </td>
+            </tr>
+
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1001" height="25" align="center" cellpadding="0" cellspacing="0">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;Export Speed Configure</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0"
+                        style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+                        <tr class="td2">
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Export Speed</td>
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Export Speed</td>
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Export Speed</td>
+                            <td width="10%" height="25" align="center" valign="middle" class="td11">Port ID</td>
+                            <td width="15%" height="25" align="center" valign="middle" class="td11">Export Speed</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" id="portEgressList">
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><input type="Submit" name="Save"
+                        value="Submit" onClick="return checkData();" class="stdbutton4">
+                    &nbsp;
+                    <input type="button" name="Cancel" value="Cancel"
+                        onClick="location.href='setup.cgi?next_file=rate_en.html'" class="stdbutton4">
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="h_rate_enable" value="@h_rate_enable#">
+        <input type="hidden" name="ingress_policy" value="@ingress_policy#">
+        <input type="hidden" name="egress_policy" value="@egress_policy#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="rate_en.html">
+        <input type="hidden" name="next_file" value="rate_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="port_status" value="@port_status#">
+
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+</body>
+
+</html>

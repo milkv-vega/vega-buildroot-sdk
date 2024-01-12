@@ -1,0 +1,9 @@
+# /etc/inittab
+::sysinit:/etc/rcS
+/dev/ttymxc0::askfirst:-/bin/sh
+::ctrlaltdel:/sbin/reboot
+#::respawn:/usr/sbin/telnetd
+::restart:/sbin/init
+::shutdown:/bin/sync
+::shutdown:/sbin/swapoff -a
+::shutdown:/bin/umount -a -r

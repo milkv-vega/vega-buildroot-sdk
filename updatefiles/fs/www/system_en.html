@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>System Information</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        < !-
+            function init() {
+                var cf = document.forms[0];
+
+                show_language_flag();
+                dataToVisible(cf);
+
+                if (cf.device_desp.value.indexOf("NMIE") == 0) {
+                    ports = cf.port_bits.value;
+                    i = 0; a = 0; b = 0;
+                    while (ports) {
+                        if (ports & 1) {
+                            if (((cf.g_port_bits.value >> i) & 1) == 0) {
+                                if ((cf.port_media.value >> i) & 1)
+                                    b++;
+                                else
+                                    a++;
+                            }
+                        }
+                        ports >>= 1;
+                        i++;
+                    }
+                    if (b)//have fiber port
+                    {
+                        if (parseInt(cf.g_port_bits.value))
+                            document.getElementById("deviceDes").innerHTML = "&nbsp;&nbsp;" + a + " electric" + b + " fiber switch";
+                        else
+                            document.getElementById("deviceDes").innerHTML = "&nbsp;&nbsp;" + a + " electric" + b + " fiber switch";
+                    } else {
+                        if (parseInt(cf.g_port_bits.value))
+                            document.getElementById("deviceDes").innerHTML = "&nbsp;&nbsp;" + a + " ports switch";
+                        else
+                            document.getElementById("deviceDes").innerHTML = "&nbsp;&nbsp;" + a + " ports switch";
+                    }
+                } else
+                    document.getElementById("deviceDes").innerHTML = "&nbsp;&nbsp;" + cf.device_desp.value;
+
+                if (cf.loader.value != "admin")
+                    disable_all_intput();
+            }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.Save, cf.Cancel);
+            setDisabled(true, cf.device_name);
+            setDisabled(true, cf.device_loc);
+            //setDisabled(true,cf.device_sn);
+            //setDisabled(true,cf.device_desp);
+            //setDisabled(true,cf.device_cont);
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "";
+
+            if (is_Illegal(cf.device_name.value) == false)
+                msg += addstr(msg_invalid_input, msg_device_name);
+
+            if (is_Illegal(cf.device_loc.value) == false && (cf.device_loc.value) == null)
+                msg += addstr(msg_invalid_input, msg_device_loc);
+
+            //if(is_Illegal(cf.device_sn.value)==false)
+            //msg += addstr(msg_invalid_input, msg_device_sn);
+
+            //if(is_Illegal(cf.device_desp.value)==false)
+            //msg += addstr(msg_invalid_input, msg_device_desp);
+
+            //if(isIllegalwithAt(cf.device_cont.value)==false)
+            //msg += addstr(msg_invalid_cont, msg_device_cont);
+
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi" onLoad="init()">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn3">中文版</span></a>
+                                <a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr class="table_title">
+                            <td width="443" height="25"><strong class="style4">&nbsp;&nbsp;Current Page
+                                    &gt;&gt;</strong><span class="style4"> System Management</span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> System Information</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1001" border="0" cellpadding="0" cellspacing="1">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Device Name </td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="device_name" value="@device_name#" class="input_user"
+                                    maxlength="32" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Device Location</td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="device_loc" value="@device_loc#" class="input_user"
+                                    maxlength="32" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Device SN</td>
+                            <td class="table_right">&nbsp;&nbsp;@device_sn#</td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Device Description </td>
+                            <td class="table_right" id="deviceDes"><!--@device_desp#--></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1001" border="0" cellpadding="0" cellspacing="1">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Memory Utilization:</td>
+                            <td width="350" class="table_right"></td>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;CPU Information:</td>
+                            <td width="350" class="table_right"></td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Valid Memory </td>
+                            <td class="table_right">&nbsp;&nbsp;@mem_total#</td>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Microprocessor</td>
+                            <td class="table_right">&nbsp;&nbsp;@cpu_processor#</td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Used Memory </td>
+                            <td class="table_right">&nbsp;&nbsp;@mem_used#</td>
+                            <td height="25" class="table_left">&nbsp;&nbsp;System Frequency</td>
+                            <td class="table_right">&nbsp;&nbsp;@cpu_frequency#</td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Free Memory </td>
+                            <td class="table_right">&nbsp;&nbsp;@mem_free#</td>
+                            <!--<td height="25" class="table_left">&nbsp;&nbsp;System Characteristics </td>
+                                <td class="table_right">&nbsp;&nbsp;@cpu_features#</td>-->
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Cached Memory</td>
+                            <td class="table_right">&nbsp;&nbsp;@mem_buffer#</td>
+                            <!--<td height="25" class="table_left">&nbsp;&nbsp;System Description </td>
+                                <td class="table_right">&nbsp;&nbsp;@cpu_hardware#</td>-->
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="Submit" onClick="return checkData();" class="showbtn6">
+                        &nbsp;
+                        <input type="button" name="Cancel" value="Cancel"
+                            onClick="location.href='setup.cgi?next_file=system_en.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="system_en.html">
+        <input type="hidden" name="next_file" value="system_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="device_desp" value="@device_desp#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="port_media" value="@port_media#">
+    </form>
+</body>
+
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Network Diagnosis</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        var tmp_link_str = "";
+        function loadXMLDoc(url) {
+            xmlhttp = null;
+            if (window.XMLHttpRequest) {// code for IE7, Firefox, Opera, etc.
+                xmlhttp = new XMLHttpRequest();
+            }
+            else if (window.ActiveXObject) {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            if (xmlhttp != null) {
+                xmlhttp.open("GET", url, true);
+                xmlhttp.onreadystatechange = state_Change;
+
+                xmlhttp.setRequestHeader("If-Modified-Since", "0");
+                xmlhttp.send(null);
+            }
+            else {
+                alert("Your browser does not support XMLHTTP.");
+            }
+        }
+
+        function state_Change() {
+            if (xmlhttp.readyState == 4) {// 4 = "loaded"
+                if (xmlhttp.status == 200) {// 200 = "OK"
+                    tmp_link_str = xmlhttp.responseText;
+                    //tmp_link_str =tmp_link_str.substring(tmp_link_str.indexOf('to'),32);
+                }
+                else//无法建立连接�?
+                {
+                    tmp_link_str = "";
+                }
+            }
+        }
+        function showtime() {
+            loadXMLDoc('/tmp/tmp_ping2file.xml');
+
+            if (tmp_link_str != "") {
+                document.getElementsByName("ping_result")[0].innerHTML = tmp_link_str
+            }
+        }
+        function init() {
+            var cf = document.forms[0];
+            //document.getElementById("logo").innerHTML = getLogoByType(cf.switch_type.value);
+
+            show_language_flag();
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+            setInterval("showtime()", 1000);
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.ping_ipaddr, cf.ping_size, cf.ping_number);
+            setDisabled(true, cf.ping_interval, cf.ping_timeout, cf.ping_number, cf.diag);
+        }
+
+        function isDomainString(s) {
+            var patrn = /^[\w-]+(\.[\w-]+)+$/;
+
+            if (!patrn.exec(s)) return false
+
+            return true
+
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "";
+
+            if (cf.todo.value == "ping_test") {
+                msg += checkHostName(cf.ping_ipaddr, msg_ping_addr);
+                msg += checkInt(cf.ping_size, msg_ping_size, 60, 1480, true);
+                msg += checkInt(cf.ping_number, msg_ping_number, 1, 100, true);
+                msg += checkInt(cf.ping_interval, msg_ping_interval, 1000, 5000, true);
+                msg += checkInt(cf.ping_timeout, msg_ping_timeout, 1000, 5000, true);
+
+                if (checkMsg(msg)) {
+                    dataToHidden(cf);
+                    //openDataSubWin('setup.cgi?next_file=ping_en.html', bigsub);
+                    return true;
+                } else
+                    return false;
+            }
+        }
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init();">
+    <form method="POST" action="setup.cgi" onSubmit="return checkData()">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td width="394" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+                                    Page &gt;&gt;</strong><span class="style4"> Network Diagnosis </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> Network Diagnosis</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1" cellpadding="0">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Destination Host</td>
+                            <td height="25" valign="middle" class="table_right">&nbsp;
+                                <input type="text" class="input_user" maxlength="32" name="ping_ipaddr"
+                                    value="@ping_ipaddr#" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Packets Size</td>
+                            <td height="25" valign="middle" class="table_right">&nbsp;
+                                <input name="ping_size" type="text" class="input_txt" value="@ping_size#" size="4"
+                                    maxlength="4" />
+                                &nbsp;byte(scope:60 to 1480)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;The Number Of Packets  </td>
+                            <td height="25" valign="middle" class="table_right">&nbsp;
+                                <input name="ping_number" type="text" class="input_txt" value="@ping_number#" size="4"
+                                    maxlength="3">
+                                &nbsp;(scope:1 to 100)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Packets Interval </td>
+                            <td height="25" valign="middle" class="table_right">&nbsp;
+                                <input name="ping_interval" type="text" class="input_txt" value="@ping_interval#"
+                                    size="4" maxlength="4" />
+                                &nbsp;ms(scope:1000 to 5000)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Response Timeout </td>
+                            <td height="25" valign="middle" class="table_right">&nbsp;
+                                <input name="ping_timeout" type="text" class="input_txt" value="@ping_timeout#" size="4"
+                                    maxlength="4" />
+                                &nbsp;ms(scope:1000 to 5000)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Ping Test </td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input name="diag" type="submit" class="showbtn7" id="Start" value="Start"
+                                    onClick="this.form.todo.value='ping_test';">
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellPadding="0" cellSpacing="0">
+            <tr>
+                <td class="table_left"><br>
+                    <hr size="1" noshade color="#ffffff">
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellpadding="0" cellspacing="0">
+            <tr>
+                <td width="150" rowspan="4" align="right" valign="top" nowrap bgcolor="#efefef">
+                    <table width="100%" height="19" border="0" cellpadding="0" cellspacing="0" bgcolor="#656565">
+                        <tr>
+                            <td align="center" valign="middle" class="td2">&nbsp;Ping Test Result&nbsp;</td>
+                        </tr>
+                    </table>
+                </TD>
+            </TR>
+            <tr>
+                <td width="535" colspan="2" align="left" valign="top">
+                    <table width="99%" border="0" align="center" cellpadding="3" cellspacing="2">
+                        <tr>
+                            <td height="6"></td>
+                        </tr>
+                        <tr>
+                            <td height="346">
+                                <textarea name="ping_result" class="input_ping" cols="95" rows="20" wrap="off"
+                                    readonly>@ping_output#</textarea>
+                            </td>
+                        </tr>
+                    </table>
+                </TD>
+            </TR>
+        </table>
+        <table width="1002" height="25" border="0" align="center" cellpadding="2" cellspacing="0">
+            <tr>
+                <td align="center" valign="middle" bgcolor="#dbdee4" class="td2" id="copyRight">
+                    <script language="JavaScript">document.write(msg_copyright);</script>
+                </td>
+            </tr>
+        </table>
+        <!--       </td>
+    </tr>
+</table>-->
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="diag_en.html">
+        <input type="hidden" name="next_file" value="diag_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+    </form>
+</body>
+
+</html>

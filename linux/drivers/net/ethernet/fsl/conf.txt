@@ -1,0 +1,47 @@
+  mac:ethernet@0x60000000{
+  		compatible = "sifive,fsl-mac";
+  		reg = <0x0 0x60000000 0x0 0x1000>;
+  		interrupt-parent = <&plic0>;
+  		interrupts = <36>;
+  		clocks = <&hfclk>;
+  		num-cs = <1>;
+  		#address-cells = <1>;
+  		#size-cells = <0>;
+  		status = "okay";
+  	};
+	
+	
+	obj-$(CONFIG_FSL)		+= xy1000_net.o
+	
+	
+
+	
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Fislink device configuration
+#
+
+config FSL
+	tristate "FSL ethernet controller "
+	depends on (FSL_SOC || INET)  
+	select PHYLIB
+	help
+	  Say Y here if you want to use the built-in 10/100 Fast ethernet
+	  controller on some Motorola ColdFire and Freescale i.MX processors.
+
+config NET_VENDOR_FSL
+	bool "Fislink devices"
+	default y
+	depends on PCI || CPU_PXA168 || FSL_SOC || PPC32 || PLAT_ORION || INET || COMPILE_TEST
+	help
+	  If you have a network (Ethernet) card belonging to this class, say Y.
+
+	  Note that the answer to this question doesn't directly affect the
+	  kernel: saying N will just cause the configurator to skip all
+	  the questions about Freescale devices. If you say Y, you will be
+	  asked for your specific card in the following questions.	
+	  
+	  
+	  
+	obj-$(CONFIG_FSL)+= fsl/
+	source "drivers/net/ethernet/fsl/Kconfig"	  

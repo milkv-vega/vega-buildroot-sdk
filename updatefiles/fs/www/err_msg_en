@@ -1,0 +1,19 @@
+##common
+1= %s is NULL
+##qos
+1=Duplicate Name Exists!
+2=Duplicate Port Exists!
+3=Duplicate MAC Exists!
+##upgrade
+1=Wrong Version,Please try again.
+2=Out of memory.
+3=Upgrade fail.
+4=Wrong Mode.
+5=User is upgrading, please operate later!
+##import
+1=Import Config file fail (Wrong Mode).\n Please try again.
+2=Import Config file fail (Wrong WEB browser).\n Please try again.
+3=Import Config file fail (Out of memory).\n Please try again.
+4=Import Config file fail (Wrong Version).\n Please try again.
+5=Import Config file fail (Wrong file).\n Please try again.
+##end

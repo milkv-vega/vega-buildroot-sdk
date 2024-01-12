@@ -1,0 +1,377 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Black&White List</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+    <link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="Javascript" for="document" event="onkeydown">
+        if (event.keyCode == 13) {
+            return additem();
+        }
+    </script>
+    <script language="JavaScript">
+        < !-
+        var count = 0;
+
+        function isRsvMac(macaddr) {
+            var cf = document.forms[0];
+            var msg = "";
+            var reg = "";
+
+            reg = cf.device_mac.value.replace(/:/g, "");
+            if (macaddr.indexOf(reg.toUpperCase()) == 0)
+                msg += msg_forward_host;
+
+            return msg;
+        }
+
+        function additem() {
+            var cf = document.forms[0];
+            var msg = "", mac = "";
+            var port_maps = 0;
+            var flag = false;
+            var bw_type = 0;
+
+            cf.mac_address.value = cf.mac_address.value.toUpperCase();
+            cf.mac_address.value = cf.mac_address.value.replace(/:/g, "-");
+
+            if (count >= 512)
+                msg += msg_max_lock;
+
+            msg += checkInt(cf.mac_vid, "VID", 1, 4094, true);
+
+            if (cf.mac_vid.value == cf.h_manage_vlan.value) {
+                flag = confirm("vlan=" + cf.mac_vid.value + "is the same as the manage vlan，still need to configured black-whitelist？");
+                if (flag != true)
+                    return false;
+            }
+
+            if (badMac(cf.mac_address, false) == true)
+                msg += fwd_err_mac;
+
+            if (isMulticastMac(cf.mac_address.value) == true) //multicast
+                msg += msg_mul_lock;
+
+            mac = cf.mac_address.value.replace(/-/g, "");
+
+            msg += isRsvMac(mac);
+
+
+            if (msg == "") {
+                for (i = 1; i < cf.forward_list[0].options.length; i++) {
+                    if ((cf.mac_vid.value == cf.forward_list[0].options[i].value.split(":")[1]) &&
+                        (getRadioCheckedValue(cf.list_type) == "1")) {
+                        flag = alert("vlan=" + cf.mac_vid.value + " has been configured whitelist mode");
+                        return false;
+                    }
+                    if (mac == cf.forward_list[0].options[i].value.split(":")[0] &&
+                        cf.mac_vid.value == cf.forward_list[0].options[i].value.split(":")[1]) {
+                        flag = confirm("The MAC Address entry already exist in the whitelist,cover it?");
+                        if (flag == true)
+                            break;
+                        else
+                            return false;
+                    }
+                }
+
+                for (i = 1; i < cf.forward_list[1].options.length; i++) {
+                    if ((cf.mac_vid.value == cf.forward_list[1].options[i].value.split(":")[1]) &&
+                        (getRadioCheckedValue(cf.list_type) == "2")) {
+                        alert("vlan=" + cf.mac_vid.value + " has been configured blacklist mode");
+                        return false;
+                    }
+                    if (mac == cf.forward_list[1].options[i].value.split(":")[0] &&
+                        cf.mac_vid.value == cf.forward_list[1].options[i].value.split(":")[1]) {
+                        flag = confirm("The MAC Address entry already exist in the blacklist,cover it?");
+                        if (flag == true)
+                            break;
+                        else
+                            return false;
+                    }
+                }
+
+                port_maps = getRadioCheckedValue(cf.fwd_uport);
+                bw_type = getRadioCheckedValue(cf.list_type);
+                cf.blackwhitemac_add.value = mac + ":" + cf.mac_vid.value + ":" + port_maps + ":" + bw_type;
+
+                cf.blackwhitemac_del.value = "";
+            }
+
+            return checkMsg(msg);
+        }
+
+        function delitem() {
+            var cf = document.forms[0];
+            var white_pos = cf.forward_list[0].selectedIndex;
+            var black_pos = cf.forward_list[1].selectedIndex;
+
+            if (white_pos > 0) {
+                var delmac = cf.forward_list[0].options[white_pos].value;
+                cf.blackwhitemac_add.value = "";
+                cf.blackwhitemac_del.value = delmac;
+            } else if (black_pos > 0) {
+                var delmac = cf.forward_list[1].options[black_pos].value;
+                cf.blackwhitemac_add.value = "";
+                cf.blackwhitemac_del.value = delmac;
+            } else
+                return false;
+
+            return true;
+        }
+
+        function init() {
+            var cf = document.forms[0];
+            var t = 0, i = 0, tmp, n = 0, a = 0, b = 0;
+            var umac = new Array();
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var strPort;
+            var objTb = document.getElementById("portlist");
+            var port_map_array = cf.port_map.value.split(";");
+            var w_i = 0, b_i = 0;
+
+            show_language_flag();
+            comCreateElement(ports, gPorts, objTb, "radio", "fwd_uport");
+            cf.fwd_uport[0].checked = true;
+            count = 0;
+            umac = cf.blackwhitemac.value.split(";");
+            while (t < (umac.length - 1)) {
+                var mac = new Array();
+                ports = cf.port_bits.value;
+                gPorts = cf.g_port_bits.value;
+                mac = umac[t].split(":");
+
+                //index
+                if (mac[3] == "2") {
+                    tmp = "---" + (w_i + 1);
+                    w_i++;
+                }
+
+                if (mac[3] == "1") {
+                    tmp = "---" + (b_i + 1);
+                    b_i++;
+                }
+                for (i = fucCheckLength(tmp); i < 7; i++)
+                    tmp += "-";
+                if (i == 7)
+                    tmp += "------";
+
+                //mac
+                tmp += mac[0].substring(0, 2) + "-" + mac[0].substring(2, 4) + "-" + mac[0].substring(4, 6)
+                    + "-" + mac[0].substring(6, 8) + "-" + mac[0].substring(8, 10) + "-" + mac[0].substring(10, 12);
+                tmp += "--------";
+
+                //vlan
+                tmp += mac[1];
+                for (i = 0; i < 16 - mac[1].length; i++)
+                    tmp += "-";
+
+                //port	   
+                i = parseInt(mac[2], 10);
+                if (ports & 1 << (i)) {
+                    strPort = port_map_array[i];
+                }
+
+                tmp += strPort + " ";
+                if (mac[3] == "2")
+                    cf.forward_list[0].options.add(new Option(tmp, mac[0] + ":" + mac[1]));//mac:vid
+                else
+                    cf.forward_list[1].options.add(new Option(tmp, mac[0] + ":" + mac[1]));//mac:vid
+                count++;
+                t++;
+            }
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.list_type[0], list_type[1]);
+            setDisabled(true, cf.mac_address);
+            setDisabled(true, cf.mac_vid);
+            setDisabled(true, cf.Add, cf.Delete);
+            for (i = 0; i < cf.fwd_uport.length; i++)
+                setDisabled(true, cf.fwd_uport[i]);
+
+        }
+
+
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn3">中文版</span></a>
+                                <a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td width="334" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+                                    Page &gt;&gt;</strong><span class="style4">Link Layer </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3">Black&White List</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" align="center" cellspacing="1" cellpadding="0">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;List Mode</td>
+                            <td height="25" colspan="9" align="left" valign="middle">&nbsp;
+                                <input type="radio" name="list_type" value="2" autocomplete="off" onClick=""
+                                    checked="checked" />Whitelist&nbsp;
+                                <input type="radio" name="list_type" value="1" autocomplete="off" onClick="" />Blacklist
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+            <tr>
+                <td height="25">
+                    <table width="1001" border="0" cellspacing="1" cellpadding="0">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Source MAC Address</td>
+                            <td class="table_right" style="text-transform:uppercase">&nbsp;
+                                <input type="text" name="mac_address" class="input_txt2" maxlength="17" />
+                                (XX-XX-XX-XX-XX-XX)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;VID</td>
+                            <td class="table_right" style="text-transform:uppercase">&nbsp;
+                                <input type="text" name="mac_vid" class="input_txt2" maxlength="4" />
+                                <a>(1-4094)</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="40" class="table_left">&nbsp;&nbsp;Port List</td>
+                            <td class="table_right">
+                                <table border="0" cellspacing="0" id="portlist">
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Handler List</td>
+                            <td class="table_right">&nbsp;
+                                <input type="Submit" name="Add" value="Add" class="showbtn7"
+                                    onClick="return additem();" />
+                                <input type="Submit" name="Delete" value="Delete" class="showbtn7"
+                                    onclick="return delitem();" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1" cellpadding="0">
+                        <tr height="8">
+                            <td colspan="2">
+                                <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                            </td>
+                        </tr>
+                        <tr align="center" valign="middle" class="td2" colspan="2">
+                            <td height="25">WhiteList</td>
+                            <td height="25">BlackList</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <select name="forward_list" size="24" id="uselect"
+                                    style="width: 100%;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                                    <option value="0">--SN-------------MAC
+                                        Address----------VLAN------------PORT------------------------------------------------------------------------
+                                    </option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="forward_list" size="24" id="uselect"
+                                    style="width: 100%;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                                    <option value="0">--SN-------------MAC
+                                        Address----------VLAN------------PORT------------------------------------------------------------------------
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="h_manage_vlan" value="@h_manage_vlan#">
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="blackwhitemac" value="@blackwhitemac#">
+        <input type="hidden" name="device_mac" value="@device_mac#">
+        <input type="hidden" name="blackwhitemac_add" value="@blackwhitemac_add#">
+        <input type="hidden" name="blackwhitemac_del" value="@blackwhitemac_del#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="mac_black_white_en.html">
+        <input type="hidden" name="next_file" value="mac_black_white_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="port_map" value="@port_map#">
+    </form>
+</body>
+
+</html>

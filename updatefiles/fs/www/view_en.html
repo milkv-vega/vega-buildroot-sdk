@@ -1,0 +1,727 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>System Status</title>
+	<style type="text/css">
+		.titleShow {
+			height: 22px;
+			position: absolute;
+			bottom: 10px;
+			right: 10px;
+			font: 15px/1.5 "微软雅黑", sans-serif bold;
+			color: #fff;
+			border-radius: 10px;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			-o-box-shadow: 2px 1px 7px rgba(0, 0, 0, .3);
+			-moz-box-shadow: 2px 1px 7px rgba(0, 0, 0, .3);
+			-webkit-box-shadow: 2px 1px 7px rgba(0, 0, 0, .3);
+			padding: 3px;
+			background: #858894;
+			word-break: break-word;
+		}
+	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		<!--
+		var c = 0;
+		var d = 0;
+		var tmp_link_str = "";
+		function loadXMLDoc(url) //基于AJAX 的无刷方式请求建立XMLHttpRequest 对象
+		{
+			xmlhttp = null;
+			if (window.XMLHttpRequest) {// code for IE7, Firefox, Opera, etc.
+				xmlhttp = new XMLHttpRequest();
+			}
+			else if (window.ActiveXObject) {// code for IE6, IE5
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			if (xmlhttp != null) {
+				xmlhttp.open("GET", url, true);
+				xmlhttp.onreadystatechange = state_Change;
+
+				xmlhttp.setRequestHeader("If-Modified-Since", "0");
+				xmlhttp.send(null);
+			}
+			else {
+				alert("Your browser does not support XMLHTTP.");
+			}
+		}
+
+		function state_Change() {
+			if (xmlhttp.readyState == 4) {// 4 = "loaded"
+				if (xmlhttp.status == 200) {// 200 = "OK"
+					tmp_link_str = xmlhttp.responseText;
+					//tmp_link_str =tmp_link_str.substring(tmp_link_str.indexOf('to'),32);
+				}
+				else//无法建立连接�?
+				{
+					tmp_link_str = "";
+				}
+			}
+		}
+
+		function showtime() {
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var i = 0, a = 0, b = 0;
+			var strPort = "";
+			var objTbBody;
+			var objTrBody;
+			var pc_time_str = new Date();
+			var sys_time_str = new Date(1970, 0, 1, 0, 0, c);
+
+			var sys_year = sys_time_str.getFullYear();
+			var sys_month = sys_time_str.getMonth() + 1;
+			var sys_day = sys_time_str.getDate();
+			var sys_hours = sys_time_str.getHours();
+			var sys_minutes = sys_time_str.getMinutes();
+			var sys_seconds = sys_time_str.getSeconds();
+
+			var pc_year = pc_time_str.getFullYear();
+			var pc_month = pc_time_str.getMonth() + 1;
+			var pc_day = pc_time_str.getDate();
+			var pc_hours = pc_time_str.getHours();
+			var pc_minutes = pc_time_str.getMinutes();
+			var pc_seconds = pc_time_str.getSeconds();
+
+			if (cf.h_time_ntp.value == "disable")
+				document.getElementById('sys_time').innerHTML = "&nbsp;&nbsp;" + pc_time_str.toDateString() + " " + pc_time_str.toTimeString().substring(0, 8);//modified by tanrui 2016/8/26
+			else
+				document.getElementById('sys_time').innerHTML = "&nbsp;&nbsp;" + sys_time_str.toDateString() + " " + sys_time_str.toTimeString().substring(0, 8);//modified by tanrui 2016/8/26
+
+			uptime = new Date(1970, 0, 1, 0, 0, d);
+			h = parseInt(d / 3600, 10);
+			m = parseInt((d % 3600) / 60, 10);
+			s = parseInt(d % 60, 10);
+
+			if (h <= 9)
+				h = "0" + h;
+			if (m <= 9)
+				m = "0" + m;
+			if (s <= 9)
+				s = "0" + s;
+			document.getElementById('update_time').innerHTML = "&nbsp;&nbsp;" + h + ":" + m + ":" + s;
+
+			c++;
+			d++;
+
+			loadXMLDoc('/tmp/tmp_link.xml');
+			if (tmp_link_str != "") {
+				while (ports) {
+					i++;
+					if (ports & 1)//visible
+					{
+						if (gPorts & 1)//G port
+						{
+							b++;
+							strPort = "G" + b;
+						}
+						else {
+							a++;
+							strPort = "XG" + a;
+						}
+						objTbBody = document.getElementById(i.toString() + "Td");
+						objTrBody = document.getElementById(i.toString() + "Tr");
+						if (tmp_link_str.substring(i - 1, i) == '1') {
+							objTbBody.innerHTML = "<font color='#FFFFFF'>" + strPort + "</font>";
+							objTrBody.bgcolor = "#2d88c9";
+							objTrBody.style.backgroundColor = "#2d88c9";
+						}
+						else {
+							objTbBody.innerHTML = "<font color='#000000'>" + strPort + "</font>";
+							objTrBody.bgcolor = "#FFFFFF";
+							objTrBody.style.backgroundColor = "#FFFFFF";
+						}
+					}
+					ports >>= 1;
+					gPorts >>= 1;
+				}
+			}
+		}
+
+		function init() {
+			var cf = document.forms[0];
+			var i = 0, a = 0, b = 0;
+			var objTd, objTb, objTbBody, objTrImg, objTrPort, objTdImg, objTdPort, objTr_, objTd_;
+			var strPort = "";
+			var objPortList = document.getElementById("portlist");
+			var objPortList2 = document.getElementById("portlist2");
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+
+			show_language_flag();
+			while (ports)//a is normal port number, b is g port number, i is sum port number
+			{
+				i++;
+				if (ports & 1)//visible
+				{
+					if (gPorts & 1)//G port
+					{
+						b++;
+						strPort = "G" + b;
+					}
+					else {
+						a++;
+						strPort = "XG" + a;
+					}
+					//create td for tr
+					objTd = document.createElement("TD");
+					objTd.width = 29;
+					//create table for td
+					objTb = document.createElement("TABLE");
+					objTb.width = 28;
+					objTb.height = 51;
+					objTb.border = 0;
+					//create tr&td for table
+					objTbBody = document.createElement("TBODY");
+					objTrImg = document.createElement("TR");
+					objTdImg = document.createElement("TD");
+					objTdImg.align = "center";
+					objTdImg.valign = "middle";
+					objTdImg.bgcolor = "#FFFFFF";
+					objTdImg.innerHTML = "<img src='images/RJ.png' width='27' height='26'>";
+					objTrImg.appendChild(objTdImg);
+
+					objTrPort = document.createElement("TR");
+					objTrPort.id = i.toString() + "Tr";
+					if (cf.link_status.value.substring(i - 1, i) == '1') {
+						objTrPort.bgcolor = "#2d88c9";
+						objTrPort.style.backgroundColor = "#2d88c9";
+					}
+					else {
+						objTrPort.bgcolor = "#FFFFFF";
+						objTrPort.style.backgroundColor = "#FFFFFF";
+					}
+					objTdPort = document.createElement("TD");
+					objTdPort.id = i.toString() + "Td";
+					objTdPort.align = "center";
+					objTdPort.valign = "middle";
+					//objTdPort.className = "style2";
+					if (cf.link_status.value.substring(i - 1, i) == '1')
+						objTdPort.innerHTML = "<font color='#FFFFFF'>" + strPort + "</font>";
+					else
+						objTdPort.innerHTML = "<font color='#000000'>" + strPort + "</font>";
+
+					objTr_ = document.createElement("TR");
+					objTr_.bgcolor = "#eaf4fa";
+					objTd_ = document.createElement("TD");
+					objTd_.align = "center";
+					objTd_.valign = "middle";
+					objTd_.width = 28;
+					objTd_.height = 5;
+					objTd_.border = 0;
+					objTr_.appendChild(objTd_);
+
+					objTrPort.appendChild(objTdPort);
+					objTbBody.appendChild(objTrImg);
+					objTbBody.appendChild(objTr_);
+					objTbBody.appendChild(objTrPort);
+					objTb.appendChild(objTbBody);
+					objTd.appendChild(objTb);
+					if (cf.switch_port.value < 28)//add by hubo 2014.2.7 for more port that in the view show
+					{
+						objPortList.appendChild(objTd);
+					}
+					else {
+						if (i < cf.switch_port.value / 2 + 1) {
+							objPortList.appendChild(objTd);
+						}
+						else {
+							objPortList2.appendChild(objTd);
+						}
+					}
+				}
+				ports >>= 1;
+				gPorts >>= 1;
+			}
+
+			if (cf.device_desp.value.length > 16) //modify by hubo 2014-03-03 for device_desp display 
+			{
+				var oTitle = null;
+				var sTitle = null;
+
+				var Des = document.getElementById("deviceDes");
+				Des.innerHTML = "&nbsp;&nbsp;" + cf.device_desp.value.substring(0, 16) + "...";
+				Des.onmouseover = function (ev) {
+					var ev = ev || window.event;
+					sTitle = "&nbsp;&nbsp;" + cf.device_desp.value;
+					oTitle = document.createElement('div');
+					oTitle.className = 'titleShow';
+					oTitle.innerHTML = sTitle;
+					oTitle.style.cssText = "max-width:" + cf.device_desp.value.length * 10 + "px;";
+					oTitle.style.left = ev.clientX + 10 + 'px';
+					oTitle.style.top = ev.clientY + 10 + 'px';
+					document.body.appendChild(oTitle);
+				};
+				Des.onmousemove = function (ev) {
+					var ev = ev || window.event;
+					if (oTitle != null) {
+						oTitle.style.left = ev.clientX + 10 + 'px';//获取鼠标�?在x座标并增�?10个像�?,下同
+						oTitle.style.top = ev.clientY + 10 + 'px';
+					}
+				};
+				Des.onmouseout = function (ev) {
+					if (oTitle != null)
+						document.body.removeChild(oTitle);
+				};
+
+			}
+			else {
+				document.getElementById("deviceDes").innerHTML = "&nbsp;&nbsp;" + cf.device_desp.value;
+			}
+			document.getElementById("CPUA").innerHTML = "CPU Utilization:" + cf.device_cpu.value + "%";
+			for (i = 0; i <= parseInt((parseInt(cf.device_cpu.value, 10) - 1) / 10, 10); i++) {
+				td_name = "cpu" + i;
+				document.getElementById(td_name).style.backgroundColor = '#2d88c9';
+			}
+
+			for (i = 0; i <= parseInt((parseInt(cf.device_mem.value, 10) - 1) / 10, 10); i++) {
+				td_name = "mem" + i;
+				document.getElementById(td_name).style.backgroundColor = '#2d88c9';
+			}
+			c = isNaN(parseInt(cf.now_time.value, 10)) ? 0 : parseInt(cf.now_time.value, 10);
+			d = isNaN(parseInt(cf.uptime.value, 10)) ? 0 : parseInt(cf.uptime.value, 10);
+			setInterval("showtime()", 1000);
+		}
+		var counter = 0;
+		function set_info() {
+			counter++;
+			if (counter >= 5) {
+				counter = 0;
+				window.open('edit_info_en.html');
+			}
+		}
+		//-->
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"
+								onclick="set_info();"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn3">中文版</span></a>
+								<a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+										class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td width="344" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+									Page &gt;&gt;</strong><span class="style4"> System Status </span><strong
+									class="style4">&gt;&gt;</strong><span class="style3"> System Status</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" height="350" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="325">
+					<table height="325" cellspacing="0" cellpadding="0" style="font-size:13px;color:#333333">
+						<tr>
+							<td width="290" align="left" valign="top">
+								<table align="left" width="290" height="325" cellspacing="0" cellpadding="0">
+									<tr>
+										<td height="25" colspan="2" align="center" style="background-color:#2d88c9;">
+											<span class="style5">Device Information</span>
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="100">
+											<table border="0" width="100" cellpadding="0" cellspacing="0"
+												bgcolor="#eaf4fa">
+												<tr height="22"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td align="center" bgcolor="#858894"></td>
+													<td align="center">&nbsp;&nbsp;</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td width="3" height="25" rowspan="11" align="right" valign="middle"
+														bgcolor="#858894"></td>
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;Device
+														Name:</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;Device SN:
+													</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">
+														&nbsp;&nbsp;Description:</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;DefaultIP:
+													</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;IP address:
+													</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;Device MAC:
+													</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;R&D SN:
+													</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;Soft
+														Version:</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;Current
+														Time:</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle">&nbsp;&nbsp;Running
+														Time:</td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="left" valign="middle"> </td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" align="center" valign="middle" bgcolor="#858894">
+													</td>
+												</tr>
+											</table>
+										</td>
+										<td width="190">
+											<table border="0" width="190" cellpadding="0" cellspacing="0"
+												bgcolor="#eaf4fa">
+												<tr height="22"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td width="187" align="center">&nbsp;&nbsp;</td>
+													<td width="3" align="center" bgcolor="#858894"></td>
+												</tr>
+
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@device_name#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@device_sn#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle" id="deviceDes"></td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@device_defip#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@device_ip#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@device_mac#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@rd_code#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">&nbsp;&nbsp;@device_fw#</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">
+														<div id="sys_time" style="vertical-align:middle"></div>
+													</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle">
+														<div id="update_time" style="vertical-align:middle"></div>
+													</td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle"> </td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="25" valign="middle"></td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+									<tr>
+										<td height="3" colspan="2" align="center" style="background-color:#2d88c9;">
+										</td>
+									</tr>
+								</table>
+							</td>
+							<td width="715" align="right" valign="top">
+								<table width="706" height="350" align="right" cellspacing="0" cellpadding="0">
+									<tr>
+										<td height="25" colspan="2" align="center" style="background-color:#2d88c9;">
+											<span class="style5">Device Status</span>
+										</td>
+									</tr>
+									<tr valign="top">
+										<td width="352">
+											<table border="0" width="352" cellpadding="0" cellspacing="0"
+												bgcolor="#eaf4fa">
+												<tr>
+													<td height="13" align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr height="22"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="46" align="center" bgcolor="#858894"></td>
+													<td align="center">Memory Utilization:@device_mem#%</td>
+												</tr>
+												<tr valign="top">
+													<td width="3" height="263" align="right" valign="middle"
+														bgcolor="#858894"></td>
+													<td align="center">
+														<table border="0" width="300" height="220" cellpadding="1"
+															cellspacing="1">
+															<tr>
+																<td width="296" bgcolor="#FFFFFF" id="mem9">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem8" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem7" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem6" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem5" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem4" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem3" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem2" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="mem1" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td height="21" bgcolor="#FFFFFF" id="mem0">&nbsp;</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+
+											</table>
+										</td>
+										<td width="354">
+											<table border="0" width="354" cellpadding="0" cellspacing="0"
+												bgcolor="#eaf4fa">
+												<tr>
+													<td height="13" align="center"></td>
+													<td width="3" align="right" bgcolor="#858894" valign="middle">
+												</tr>
+												<tr height="22"
+													style="-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:微软雅黑, sans-serif; color:#333333;">
+													<td height="46" align="center" id="CPUA"></td>
+													<td align="center" bgcolor="#858894"></td>
+												</tr>
+												<tr valign="top">
+													<td height="263" align="center">
+														<table border="0" width="300" height="220" cellpadding="1"
+															cellspacing="1">
+															<tr>
+																<td width="296" bgcolor="#FFFFFF" id="cpu9">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu8" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu7" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu6" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu5" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu4" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu3" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu2" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td id="cpu1" bgcolor="#FFFFFF">&nbsp;</td>
+															</tr>
+															<tr>
+																<td height="21" bgcolor="#FFFFFF" id="cpu0">&nbsp;</td>
+															</tr>
+														</table>
+													</td>
+													<td bgcolor="#858894" width="3" align="right" valign="middle"></td>
+												</tr>
+
+											</table>
+										</td>
+									</tr>
+									<tr>
+										<td height="3" colspan="2" align="center" style="background-color:#2d88c9;">
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table align="center" width="1002" height="5" cellspacing="0">
+			<tr>
+				<td height="5" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+			</tr>
+		</table>
+		<table align="center" width="1002" height="108" cellspacing="0" class="table_border">
+			<tr>
+				<td height="23" align="center" valign="middle" colspan="4" style="background-color:#2d88c9;"><span
+						class="style5">Port Information</span></td>
+			</tr>
+			<tr align="center" colspan="4" valign="top">
+				<td bgcolor="#858894" width="3" align="left" valign="middle"></td>
+				<td align="center" height="80" style="padding-left:5px;padding-top:10px;padding-right:5px;"
+					bgcolor="#eaf4fa">
+					<table width="984" border="0" cellspacing="1" align="center" class="table_border">
+						<tr align="center" id="portlist">
+						</tr>
+						<tr align="center" id="portlist2">
+						</tr>
+					</table>
+				</td>
+				<td bgcolor="#858894" width="3" align="left" valign="middle"></td>
+			</tr>
+			<tr>
+				<td height="1" align="center" valign="middle" colspan="4" style="background-color:#2d88c9;"></td>
+			</tr>
+			<!-- added by tanrui 2016/11/1 -->
+			<tr>
+				<td height="23" align="center" valign="middle" colspan="4" style="background-color:#2d88c9;">
+					<span class="style5">
+						<script language="javascript">document.write(msg_copyright);</script>
+					</span>
+				</td>
+			</tr>
+			<!-- end-->
+		</table>
+
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="button" name="Refresh" value="Refresh" class="showbtn6"
+							onClick="location.href='setup.cgi?next_file=view_en.html'">
+					</span>
+				</td>
+			</tr>
+		</table>
+
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="rd_code" value="@rd_code#">
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="device_mem" value="@device_mem#">
+		<input type="hidden" name="device_cpu" value="@device_cpu#">
+		<input type="hidden" name="link_status" value="@link_status#">
+		<input type="hidden" name="now_time" value="@now_time#">
+		<input type="hidden" name="uptime" value="@uptime#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="view_en.html">
+		<input type="hidden" name="next_file" value="view_en.html">
+		<input type="hidden" name="message" value="@msg_text#">
+		<!-- add for display port info by js-->
+		<input type="hidden" name="switch_type" value="@switch_type#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="device_desp" value="@device_desp#">
+		<input type="hidden" name="device_defip" value="@device_defip#">
+		<input type="hidden" name="port_media" value="@port_media#">
+		<input type="hidden" name="h_time_ntp" value="@h_time_ntp#">
+		<!-- end-->
+	</form>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+Nuclei HBird Platform
+M:	Ruigang Wan <rgwan@nucleisys.com>
+S:	Maintained
+F:	board/nuclei/hbird/
+F:	include/configs/nuclei-hbird.h
+F:	configs/hbird_defconfig

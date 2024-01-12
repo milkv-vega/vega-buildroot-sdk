@@ -1,0 +1,343 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>MAC Address List</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        <!--
+
+        function ShowMacList()
+        {
+            var cf = document.forms[0];
+            var t = 0, tmp = "", tmp1 = "",tmp2 = "", portmap = "";
+            var num = 0;
+            var newentry = new Array();
+            var newport = new Array();
+            var newone=cf.mac_list.value.split(";");
+            var gPorts = cf.g_port_bits.value;
+            //var ifAuto = cf.maclist_type.value == 0;
+
+            var switch_port_num = cf.switch_port.value;
+            if(cf.maclist_type.value == 0)
+                setDisabled(true, cf.mac_port_num);
+            else
+                setDisabled(false, cf.mac_port_num);
+
+            cf.mac_table.innerHTML = "";
+            cf.mac_table.options.add(new Option("--SN-------------------------MAC----------------------TYPE------------VID-----------PORT---------------------------------------------------------------------------", "0"));
+            while(t < (newone.length -1))
+            {
+                tmp = "---" + (t + 1);
+                for(var i = fucCheckLength(tmp); i < 8; i ++)
+                    tmp += "-";
+
+                tmp += "--------------";
+
+                newentry = newone[t].split(":");
+
+                tmp += newentry[0].substring(0, 2) + "-" + newentry[0].substring(2, 4) + "-" + newentry[0].substring(4, 6) + "-" + newentry[0].substring(6, 8) + "-" + newentry[0].substring(8, 10) + "-" + newentry[0].substring(10, 12);
+
+                tmp += "---------------";
+                newport = newentry[3].split(" ");
+                num = 0;
+                portmap = "";
+                for( j = 0; j < newport.length; j++ )
+                {
+                    if( newport[j] == "")
+                        continue;
+                    num = parseInt(newport[j], 10);
+                    if((newentry[1] == "0x1") && (num == 31) && (cf.cpu_port.value == "31") )
+                        tmp1 = "Fixed-----------";
+                    else if(newentry[1] == "0x1")
+                        tmp1 = "Static---------";
+                    else
+                        tmp1 = "Dynamic---------";
+            	
+                    tmp2 = newentry[2]+"-------------";
+                    if((num == 31)&&(cf.cpu_port.value == "31"))
+                        portmap = "MII　";
+                    else if(isNaN(num))
+                    {
+                        portmap = newport[j] + "　";
+                    }
+                    else
+                    {
+                        if(num > 35 && num < 44)
+                        {
+                            portmap += "LAG" + (num-35);
+                        }
+                        else
+                        {
+                            portmap += "G" + (num + 1) + "　";
+                        }
+                    }
+                }
+
+                //tmp += (num < 8) ? (num + 1) : ("G" + (num - 7));
+                tmp = tmp + tmp1 + tmp2 + portmap;
+
+                t++;
+
+                if( (cf.maclist_type.value != 0) )
+                {			
+                    if(num > 35 && num < 44)
+                    {
+                        if(num != cf.mac_port_num.value-1+36-switch_port_num)
+                        continue;
+                    }
+                    else
+                    {
+                        if(num != cf.mac_port_num.value-1)
+                        continue;
+                    }
+
+                }
+                cf.mac_table.options.add(new Option(tmp,newone[t]));
+            }
+        }
+
+        function init()
+        {
+            var cf = document.forms[0];
+            var t = 0, a = 0, b = 0, i = 0,l = 0, tmp = "";
+            var newentry = new Array();
+            var newone=cf.mac_list.value.split(";");
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var range = document.getElementById("range");
+            var lag = 8;
+        	
+            show_language_flag();
+    	
+            range.innerHTML = "(1-4080s)";
+
+            while(ports)
+            {
+                if(ports & 1)
+                {
+                    if(gPorts & 1)
+                    {
+                        strPort = "port G" + (++a);
+                        cf.mac_port_num.options.add(new Option(strPort, i+1));
+                    }else
+                    {
+                        strPort = "port " + (++b);
+                        cf.mac_port_num.options.add(new Option(strPort, i+1));
+                    }
+                }
+                ports >>= 1;
+                gPorts >>= 1;
+                i++;
+            }
+            i++;
+            while(lag--)
+            {
+                 
+                 strPort = "LAG" + (++l);
+                 cf.mac_port_num.options.add(new Option(strPort, i));
+                 i++;
+            }
+            dataToVisible(cf);
+
+            if(cf.maclist_type.value == 0)
+                setDisabled(true,cf.mac_port_num);
+            else
+                setDisabled(false,cf.mac_port_num);
+
+            ShowMacList();
+            cf.mac_oldtime.value = cf.h_mac_oldtime.value;
+        	
+            if( !( (cf.loader.value == "admin") || (cf.loader.value == "MaiweSwitch") ) )
+                disable_all_intput();
+        }
+
+        function checkdata()
+        {
+            ShowMacList();
+        }
+        <!-- add by lxq -->
+        function checkOldTime() {
+            var cf = document.forms[0];
+            var msg = "";
+            cf.mac_list.value = "";
+            var strOldTime = cf.mac_oldtime.value;
+            var r = /^[1-9]+[0-9]*$/;
+
+            if (strOldTime.match(r)) {
+                if (strOldTime < 1 || strOldTime > 4080)
+                    msg = addstr(msg_oidtime_error, 1, 4080);
+                else
+                    cf.h_mac_oldtime.value = strOldTime;
+            } else
+                msg = msg_oidtime_numerror;
+            return checkMsg(msg);
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.mac_port_num);
+            setDisabled(true, cf.mac_oldtime);
+            setDisabled(true, cf.maclist_type);
+            setDisabled(true, cf.Save);
+            setDisabled(true, cf.Cancel);
+            setDisabled(true, cf.Refresh);
+        }
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr class="table_title">
+                            <td width="348" height="25"><strong class="style4">&nbsp;&nbsp;Current Page
+                                    &gt;&gt;</strong><span class="style4"> Statistics </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> MAC Address List</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1" cellpadding="0">
+                        <tr>
+                            <td width="200" height="25" class="table_left">&nbsp;&nbsp;MAC Address Aging Time</td>
+                            <td align="left" class="table_right">
+                                &nbsp;&nbsp;<input type="text" name="mac_oldtime" maxlength="4" />
+                                <span class="table_left" id="range"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="200" height="25" class="table_left">&nbsp;&nbsp;MAC Address Display Type</td>
+                            <td align="left" class="table_right">&nbsp;
+                                <select name="maclist_type" class="select1" onchange="checkdata()">
+                                    <option value="0">Auto</option>
+                                    <option value="1">Port</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" bgcolor="#34AED1" class="table_left">&nbsp;&nbsp;Port List </td>
+                            <td class="table_right">&nbsp;
+                                <select name="mac_port_num" class="select1" onChange="checkdata()">
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1001" border="0" cellspacing="1" cellpadding="0">
+                        <tr class="table_right">
+                            <td colspan="7">
+                                <select name="mac_table" size="25"
+                                    style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                                    <option value="0">
+                                        --SN-------------------------MAC----------------------TYPE--------------------PORT---------------------------------------------------------------------------
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" height="4">
+                                <hr size="1" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="Submit" onClick="return checkOldTime();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="Refresh" value="Refresh"
+                            onClick="location.href='setup.cgi?next_file=mac_en.html'" class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="Cancel"
+                            onClick="location.href='setup.cgi?next_file=mac_en.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="h_mac_oldtime" value="@h_mac_oldtime#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="h_maclist_type" value="@h_maclist_type#" />
+        <input type="hidden" name="h_mac_port_num" value="@h_mac_port_num#" />
+        <input type="hidden" name="mac_list" value="@mac_list#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="mac_en.html">
+        <input type="hidden" name="next_file" value="mac_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="cpu_port" value="@cpu_port#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="rd_code" value="@rd_code#">
+        <input type="hidden" name="switch_port" value="@switch_port#">
+    </form>
+</body>
+
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+    <head>
+        <title>Ping Test Result</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <META http-equiv="Pragma" CONTENT="no-cache">
+        <META HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
+        <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+        <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+        <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+        <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+        <script language="javascript" type="text/javascript" src="js/func.js"></script>
+        <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script> 
+        <script language="JavaScript">
+            <!-- hide script from old browsers
+            var refresh_flag = @refresh_flag#
+            function refresh()
+            {
+                //    dataToVisible(document.forms[0]);
+                //document.getElementById("copyRight").innerHTML = getCopyRight(cf.switch_type.value);
+                if(refresh_flag == 1)
+                    window.setTimeout("window.location.href='setup.cgi?next_file=ping_en.html'",1500);
+            }
+            //
+            //-->
+        </script>
+    </head>
+    <body onLoad="refresh();">
+        <form name="ping" method="POST" action="setup.cgi">
+            <div align="center">
+                <table width="660" border="0" align="center" cellPadding="0" cellSpacing="0">
+                    <tr>
+                        <td class="table_left"><br> <hr size="1" noshade color="#ffffff"></td>
+                    </tr>
+                </table>
+                <table width="660" border="0" align="center" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td width="124" rowspan="4" align="right" valign="top" nowrap bgcolor="#efefef">
+                            <table width="100%" height="19" border="0" cellpadding="0" cellspacing="0" bgcolor="#656565">
+                                <tr>
+                                    <td align="right" valign="middle" class="td2">&nbsp;Result&nbsp;</td>
+                                </tr>
+                            </table>
+                        </TD>
+                    </TR>
+                    <tr>
+                        <td width="535" colspan="2" align="left" valign="top"><table width="99%" border="0" align="center" cellpadding="3" cellspacing="2">
+                                <tr><td height="6"></td></tr>
+                                <tr>
+                                    <td height="346">
+                                        <textarea name="ping_result" class="input_ping" cols="95" rows="20" wrap="off" readonly>
+                                                @ping_output#
+                                        </textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td height="20" colspan="8" align="center"><input type="button" name="close2" class="stdbutton" value="close" onClick="self.close()"></td>
+                                </tr>
+                            </table></TD>
+                    </TR>
+                </table>
+                <table width="660" height="25" border="0" align="center" cellpadding="2" cellspacing="0">
+                    <tr>
+                        <td align="center" valign="middle" bgcolor="#dbdee4" class="td2" id="copyRight">
+                            <script language="JavaScript">document.write(msg_copyright);</script>
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+            <input type="hidden" name="todo" value="ping_close">
+            <input type="hidden" name="this_file" value="ping_en.htm">
+            <input type="hidden" name="next_file" value="ping_en.htm">
+            <input type="hidden" name="message" value="@msg_text#">
+            <input type="hidden" name="switch_type" value="@switch_type#">
+        </form>
+    </body>
+</html>

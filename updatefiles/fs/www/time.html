@@ -1,0 +1,338 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+  <title>时间配置</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+  <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+  <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+  <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+  <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+  <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+  <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+  <script language="JavaScript">
+    <!--
+    
+    var dlArray_auto =  [0, 0, 0, 1, 1,
+               0, 1, 0, 1, 0,
+               1, 0, 1, 0, 1,
+               1, 1, 0, 1, 1,
+               1, 1, 1, 1, 0,
+               0, 0, 0, 0, 0,
+               0, 0, 1, 0, 0,
+               1];
+    
+    function setDLS()
+    {
+        var cf = document.forms[0];
+      var index = cf.time_zone.selectedIndex;
+      if (index > -1)
+      {
+        if (dlArray_auto[index] == 0)
+        {
+          cf.auto_dls.disabled = true;
+          cf.auto_dls.checked = false;
+        }
+        else
+          cf.auto_dls.disabled = false;
+      }
+      else
+        cf.auto_dls.disabled = false;
+    }
+    
+    var a = 0;
+    var isNtp;
+    function checkData()
+    {
+        var cf = document.forms[0];
+        var msg = "";
+        var milisec = new Date().getTime();
+    
+        dataToHidden(cf);
+    
+      cf.pc_time.value = milisec/1000 + 2;
+    
+      if((getRadioCheckedValue(cf.time_ntp) == "enable") && (cf.time_server.value.length > 0))
+          msg += checkHostName(cf.time_server, msg_time_server);
+    
+      /*if(getRadioCheckedValue(cf.time_ntp) == "enable")
+      {
+        if(check_ip(cf.time_server)== false || cf.time_server.value=="")
+          msg += msg_time_server+"错误";
+      }*/
+
+    dataToHidden(cf);
+    return checkMsg(msg);
+}
+
+    //start add by zhangbo
+    function formatTen(num) {
+      return num > 9 ? (num + "") : ("0" + num);
+    }
+
+    function time_assemble(date, language_flag) {
+      var time = "";
+      if (language_flag)//chinese assemble
+      {
+        var year = date.getFullYear();
+        var month = date.getMonth() + 1;
+        var day = date.getDate();
+        var hour = date.getHours();
+        var minute = date.getMinutes();
+        var second = date.getSeconds();
+
+        time = year + "年" + formatTen(month) + "月" + formatTen(day) + "日 ";
+        time += formatTen(hour) + ":" + formatTen(minute) + ":" + formatTen(second);
+        time = "&nbsp;&nbsp;" + time + ' 星期' + '日一二三四五六'.charAt(date.getDay());
+      }
+      else//english assemble
+      {
+        time = time = date.toDateString() + " " + date.toTimeString().substring(0, 8);
+        time = "&nbsp;&nbsp;" + time;
+      }
+      return time;
+    }
+    //end add by zhangbo
+    function showtime()  //changed by zhangbo : now this js_part can be used in both chinese and english web.
+    {
+      var cf = document.forms[0];
+      var sys_day = new Date(1970, 0, 1, 0, 0, a);
+      var language_flag = true;
+      if (CheckChinese(document.title)) {
+        language_flag = true;//chinese
+        document.getElementById('sys_time').innerHTML = time_assemble(sys_day, language_flag);
+        if ((cf.loader.value != "admin") || (cf.h_time_ntp.value == "enable"))
+          document.getElementById('time').innerHTML = time_assemble(new Date(), language_flag);
+        else
+          document.getElementById('time').innerHTML = time_assemble(new Date(), language_flag) + "&nbsp;&nbsp;" + "<input name=\"sync\" type=\"Submit\" class=\"stdbutton_email\" value=\"更新时间至交换机\" onClick=\"this.form.todo.value='sync';\"/>";
+      } else {
+        language_flag = false;//english
+        document.getElementById('sys_time').innerHTML = time_assemble(sys_day, language_flag);
+        if ((cf.loader.value != "admin") || (isNtp == true))
+          document.getElementById('time').innerHTML = time_assemble(new Date(), language_flag);
+        else
+          document.getElementById('time').innerHTML = time_assemble(new Date(), language_flag) + "<input name=\"sync\" type=\"Submit\" class=\"stdbutton_email\" value=\"Update Time\" onClick=\"this.form.todo.value='sync';\"/>";
+      }
+      a++;
+    }
+
+    function disable_all_intput() {
+      var cf = document.forms[0];
+      var i;
+
+      setDisabled(true, cf.Save, cf.Cancel);
+      setDisabled(true, cf.time_ntp[0], cf.time_ntp[1]);
+      setDisabled(true, cf.time_zone, cf.auto_dls, cf.time_server);
+
+      //if((getRadioCheckedValue(cf.time_ntp) != "enable") && (cf.loader.value != "admin"))
+      //setDisabled(true,cf.sync);
+    }
+
+
+    function set_time() {
+      var cf = document.forms[0];
+      var dflag = (getRadioCheckedValue(cf.time_ntp) != "enable");
+
+      setDisabled(dflag, cf.time_server);
+    }
+
+    function init() {
+      var cf = document.forms[0];
+      dataToVisible(cf);
+
+      a = isNaN(parseInt(cf.now_time.value, 10)) ? 0 : parseInt(cf.now_time.value, 10);
+      setInterval("showtime()", 1000);
+
+      isNtp = (getRadioCheckedValue(cf.time_ntp) == "enable");
+
+      if (cf.loader.value != "admin")
+        disable_all_intput();
+      else {
+        set_time();
+        setDLS();
+      }
+    }
+
+    //-->
+  </script>
+</head>
+
+<body style="margin:0" onLoad="init();">
+  <form method="POST" action="setup.cgi" onSubmit="return checkData()">
+    <table width="1002" border="0" align="center" cellspacing="0">
+      <tr>
+        <td>
+          <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+            <tr>
+              <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+            </tr>
+            <tr>
+              <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+              <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+                <a href="https://milkv.io/">
+                  <span class="showbtn3">网站</span>
+                </a>
+                <a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a
+                  href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span
+                    class="showbtn5">&times;</span></a>
+                <br>
+                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                  </spen>
+              </td>
+            </tr>
+            <tr>
+              <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+            </tr>
+            <tr>
+              <table width="1002">
+                <script language="JavaScript1.2">init_menu();</script>
+              </table>
+            </tr>
+            <tr>
+              <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table width="1002" border="0" align="center" cellspacing="0">
+      <tr>
+        <td height="25" align="left" valign="middle">
+          <table width="1002" border="0" cellspacing="0">
+            <tr>
+              <td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                  class="style4">系统管理</span><strong class="style4">&gt;&gt;</strong><span class="style3">时间配置</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr align="left" valign="top">
+        <td height="25" align="left">
+          <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+            <tr align="left" valign="top" class="table_enable">
+              <td height="25" width="150" valign="middle">&nbsp;&nbsp;时间配置</td>
+              <td height="25" colspan="9" align="left" valign="middle">&nbsp;
+                <input type="radio" name="time_ntp" value="disable" autocomplete="off" onClick="set_time()" />
+                本地时间
+                &nbsp;
+                <input type="radio" name="time_ntp" value="enable" autocomplete="off" onClick="set_time()" />
+                使用NTP
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr height="8">
+        <td width="1001">
+          <div style="overflow:hidden;background:#969594;height:1px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table width="1002" border="0" cellpadding="0" cellspacing="1">
+            <tr>
+              <td width="150" height="25" class="table_left">&nbsp;&nbsp;世界时区</td>
+              <td class="table_right">&nbsp;
+                <select name="time_zone" onChange="setDLS()" class="select_ntp">
+                  <option value="-12">(GMT-12:00) Kwajalein</option>
+                  <option value="-11">(GMT-11:00) Midway Island, Samoa</option>
+                  <option value="-10">(GMT-10:00) Hawaii</option>
+                  <option value="-9">(GMT-09:00) Alaska</option>
+                  <option value="-8" selected>(GMT-08:00) Pacific Time (USA &amp; Canada)</option>
+                  <option value="-7 1">(GMT-07:00) Arizona</option>
+                  <option value="-7 2">(GMT-07:00) Mountain Time(USA &amp; Canada)</option>
+                  <option value="-6 1">(GMT-06:00) Mexico</option>
+                  <option value="-6 2">(GMT-06:00) Central Time(USA &amp; Canada)</option>
+                  <option value="-5 1">(GMT-05:00) Indiana East, Colombia, Panama</option>
+                  <option value="-5 2">(GMT-05:00) Eastern Time(USA &amp; Canada)</option>
+                  <option value="-4 1">(GMT-04:00) Bolivia, Venezuela</option>
+                  <option value="-4 2">(GMT-04:00) Atlantic Time(Canada), Brazil West</option>
+                  <option value="-3 1">(GMT-03:00) Guyana</option>
+                  <option value="-3 2">(GMT-03:00) Brazil East, Greenland</option>
+                  <option value="-2">(GMT-02:00) Mid-Atlantic</option>
+                  <option value="-1">(GMT-01:00) Azores</option>
+                  <option value="+0 1">(GMT) Gambia, Liberia, Morocco</option>
+                  <option value="+0 2">(GMT) England</option>
+                  <option value="+1 1">(GMT+01:00) Tunisia</option>
+                  <option value="+1 2">(GMT+01:00) France, Germany, Italy</option>
+                  <option value="+2 1">(GMT+02:00) South Africa</option>
+                  <option value="+2 2">(GMT+02:00) Greece, Ukraine, Romania, Turkey</option>
+                  <option value="+3">(GMT+03:00) Iraq, Jordan, Kuwait</option>
+                  <option value="+4">(GMT+04:00) Armenia</option>
+                  <option value="+5">(GMT+05:00) Pakistan, Russia</option>
+                  <option value="+6">(GMT+06:00) Bangladesh, Russia</option>
+                  <option value="+7">(GMT+07:00) Thailand, Russia</option>
+                  <option value="+8 1">(GMT+08:00) China, Hong Kong, Australia Western</option>
+                  <option value="+8 2">(GMT+08:00) Singapore, Taiwan, Russia</option>
+                  <option value="+9">(GMT+09:00) Japan, Korea</option>
+                  <option value="+10 1">(GMT+10:00) Guam, Russia</option>
+                  <option value="+10 2">(GMT+10:00) Australia</option>
+                  <option value="+11">(GMT+11:00) Solomon Islands</option>
+                  <option value="+12 1">(GMT+12:00) Fiji</option>
+                  <option value="+12 2">(GMT+12:00) New Zealand</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;</td>
+              <td class="table_right">&nbsp;&nbsp;
+                <input type="checkbox" name="auto_dls" value="checkbox" />
+                自动调整夏令时
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;&nbsp;NTP服务器</td>
+              <td class="table_right">&nbsp;
+                <input type="text" name="time_server" maxlength="31" class="input_email" value="@time_server#" />
+                （可选）
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;&nbsp;系统时间</td>
+              <td class="table_right">
+                <div id="sys_time"></div>
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;&nbsp;PC时间</td>
+              <td class="table_right">
+                <div id="time"></div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr height="8">
+        <td width="1001">
+          <div style="overflow:hidden;background:#969594;height:1px;"></div>
+        </td>
+      </tr>
+      <tr align="left" valign="top">
+        <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+            <input type="Submit" name="Save" value="配置" onClick="return checkData();" class="showbtn6">&nbsp;
+            <input type="button" name="Cancel" value="取消" onClick="location.href='setup.cgi?next_file=time.html'"
+              class="showbtn6">
+          </span></td>
+      </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    <INPUT type="hidden" name="h_time_ntp" value="@h_time_ntp#">
+    <INPUT type="hidden" name="h_time_zone" value="@h_time_zone#">
+    <INPUT type="hidden" name="h_auto_dls" value="@h_auto_dls#">
+    <INPUT type="hidden" name="now_time" value="@now_time#">
+    <INPUT type="hidden" name="pc_time" value="@pc_time#">
+    <input type="hidden" name="loader" value="@loader#">
+    <input type="hidden" name="todo" value="save">
+    <input type="hidden" name="this_file" value="time.html">
+    <input type="hidden" name="next_file" value="time.html">
+    <input type="hidden" name="message" value="@msg_text#">
+    <input type="hidden" name="switch_type" value="@switch_type#">
+  </form>
+</body>
+
+</html>

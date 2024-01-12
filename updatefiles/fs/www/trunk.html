@@ -1,0 +1,615 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>端口汇聚</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        var maxCount;
+        // var arr_key_value = [0x1 ,0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0x20000, 0x100000];
+        // var arr_key_type = [1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1];
+        // var arr_lag_key = ["SRCMAC", "DSTMAC", "ETHPYTE", "UDPSTAG", "STAG_VID", "STAG_CFI", "STAG_COS", "UDPCTAG", "CTAG_VID", "CTAG_CFI", "CTAG_COS", "SRCIP", "DSTIP", "PROTO", "TOS", "SRCPORT", "DSTPORT", "INPORT"];
+
+        var arr_key_value = [0x1, 0x2, 0x4, 0x8, 0x70, 0x80, 0x700, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0x20000, 0x100000];
+        var arr_key_type = [1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1];
+        var arr_lag_key = ["SRCMAC", "DSTMAC", "ETHPYTE", "UDPSTAG", "STAG", "UDPCTAG", "CTAG", "SRCIP", "DSTIP", "PROTO", "TOS", "SRCPORT", "DSTPORT", "INPORT"];
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "", i, j, trunks;
+            var count = new Array();
+            var port_maps = new Array();
+            var trunk_key_maps = new Array();
+            var index, sum, num, n, m, temp;
+            var arry_tmp = new Array(8);
+            var arrPortState = cf.port_status.value.split(";");
+            var oldtrunk_setting = cf.trunk_setting.value;
+            var gPorts = cf.g_port_bits.value;
+            var ports = cf.port_bits.value;
+            var arr_lag_vlan = "";
+            var arr_vlan_lag = cf.vlan_lag_port_set.value.split(";");
+            var arr_lacp_group_cfg = cf.lacp_group_cfg.value.split(";");
+            var lacp_group_flag = 0;
+            var port_map_array = cf.port_map.value.split(";");
+
+            if (getRadioCheckedValue(cf.trunk_enable) == "enable" && cf.h_lacp_enable.value == 1) {
+                msg += "端口汇聚不能与LACP同时启用，请先关闭LACP功能！\n";
+            }
+            else if (getRadioCheckedValue(cf.trunk_enable) == "enable") {
+                for (i = 0; i < maxCount; i++) {
+                    count[i] = 0;
+                    port_maps[i] = 0;
+                    trunk_key_maps[i] = 0;
+                    var trunks = document.getElementsByName("trunk" + i);
+                    var trunks_key = document.getElementsByName("trunk" + i + "_key");
+                    for (j = 0; j < trunks.length; j++) {
+                        if (trunks[j].checked == true) {
+                            count[i]++;
+                            port_maps[i] |= 1 << trunks[j].value;
+                        }
+                    }
+                    for (j = 0; j < trunks_key.length; j++) {
+                        if (trunks_key[j].checked == true)
+                            trunk_key_maps[i] |= trunks_key[j].value;
+                    }
+                    //alert(port_maps[i]);
+                    if (eval("cf.trunk_enable" + i).checked == true) {
+                        sum = port_maps[i];
+                        index = 0;
+                        num = 0;
+                        temp = 0;
+                        n = 0; m = 0;
+                        arry_tmp = [0, 0, 0, 0, 0, 0, 0, 0];
+                        while (sum) {
+                            if ((sum & 1) == 0) {
+                                sum >>= 1;
+                                index++;
+                                continue;
+                            }
+
+                            arry_tmp[num] = arrPortState[index];
+                            sum >>= 1;
+                            num++;
+                            index++;
+                        }
+                        sum = port_maps[i];
+                        if ((sum & gPorts) && (sum & (ports - gPorts))) {
+                            msg += addstr(msg_trunking_port_inconformity, i + 1);
+                        }
+
+                        for (n = 0; n < num; n++) {
+                            for (m = n + 1; m < num; m++) {
+                                if (arry_tmp[n] != arry_tmp[m]) {
+                                    msg += addstr(msg_trunking_port_edit, i + 1);
+                                    temp += 1;
+                                    break;
+                                }
+                            }
+                            if (temp != 0) {
+                                temp = 0;
+                                break;
+                            }
+                        }
+
+                        for (j = 0; j < arrPortState.length - 1; j++) {
+                            if (arrPortState[j].substring(2, 3) == "0")//port is disable
+                            {
+                                if ((port_maps[i] >> j) & 1) {
+                                    msg += addstr(msg_trunking_port_disabled, i + 1);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (cf.h_ring_enable.value == 'enable')//ring is enable
+                        {
+                            var arrRingConfig = cf.ring_config.value.split(";");
+                            var arrItem;
+
+                            for (j = 0; j < arrRingConfig.length - 1; j++) {
+                                arrItem = arrRingConfig[j].split(':');
+
+                                if (arrItem[2] == '1')//one of rows is enable
+                                {
+                                    if (port_maps[i] & parseInt(arrItem[1])) {
+                                        msg += addstr(msg_trunking_port_ring, i + 1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (cf.h_rstp_enable.value == 'enable')//rstp is enable
+                        {
+                            var arrRstpConfig = cf.rstp_setting.value.split(";");
+                            var arrItem;
+
+                            for (j = 0; j < arrRstpConfig.length - 1; j++) {
+                                arrItem = arrRstpConfig[j].split(':');
+
+                                if (arrItem[4] == '0')// the port participates in the RSTP
+                                {
+                                    if (port_maps[i] & (1 << j)) {
+                                        msg += addstr(msg_trunking_port_rstp, i + 1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        //erps is running
+                        if (cf.h_erps_enable.value == 'enable') {
+                            var erps_ring_cfg = cf.erps_ring_config.value.split(";");
+                            var erps_node_cfg = cf.erps_node_config.value.split(";");
+                            for (j = 0; j < erps_ring_cfg.length - 1; j++) {
+                                var single_ring_cfg = erps_ring_cfg[j].split(":");
+                                var single_node_cfg = erps_node_cfg[j].split(":");
+                                if (single_ring_cfg[0] == "1") {
+                                    if ((port_maps[i] & parseInt(single_node_cfg[0])) || (port_maps[i] & parseInt(single_node_cfg[1]))) {
+                                        msg += addstr(msg_trunking_port_erps, i + 1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (cf.loopback_enable.value == "enable") {
+                            var loopback_cfg = cf.loopback_portconfig.value.split(";");
+
+                            for (j = 0; j < loopback_cfg.length; j++) {
+                                if (loopback_cfg[j].split(":")[0] == "1")
+                                    if (port_maps[i] & (1 << j)) {
+                                        msg += addstr(msg_trunking_port_loopback, i + 1);
+                                        break;
+                                    }
+                            }
+                        }
+
+                        if (cf.h_lacp_enable.value == '1') {
+                            var port_lacp = cf.lacp_port_cfg.value.split(";");
+                            var arr_lacp_group_cfg = cf.lacp_group_cfg.value.split(";");
+                            for (j = 0; j < port_lacp.length - 1; j++) {
+                                var port_lacp_set = port_lacp[j].split(":");
+                                if ((port_lacp_set[2] == '1') && (port_maps[i] & (1 << j))) {
+                                    msg += addstr(msg_trunking_port_disable_lacp, i + 1, port_map_array[j]);
+                                }
+                            }
+
+                            for (j = 0; j < arr_lacp_group_cfg.length - 1; j++) {
+                                if (1 == arr_lacp_group_cfg[j].split(":")[3] && (i + 1) == arr_lacp_group_cfg[j].split(":")[0])
+                                    msg += addstr(msg_trunking_disable_lacp, i + 1);
+                            }
+                        }
+
+                        if ((i + 1) == arr_vlan_lag[i].split(":")[4]) {
+                            arr_lag_vlan += arr_vlan_lag[i] + ";";
+                        }
+                        else {
+                            arr_lag_vlan += "1:0:1:1:" + (i + 1) + ";";
+                        }
+
+                    }
+                    else {
+                        lacp_group_flag = 0;
+                        for (j = 0; j < arr_lacp_group_cfg.length - 1; j++) {
+                            if (cf.h_lacp_enable.value == '1' && (i + 1) == arr_lacp_group_cfg[j].split(":")[0] && arr_lacp_group_cfg[j].split(":")[3] == "1") {
+                                arr_lag_vlan += arr_vlan_lag[i] + ";";
+                                lacp_group_flag = 1;
+                                break;
+                            }
+                        }
+
+                        if (!lacp_group_flag)
+                            arr_lag_vlan += "1:0:1:1:0;";
+                    }
+                }
+
+                cf.trunk_setting.value = "";
+                for (j = 0; j < maxCount; j++) {
+                    if (count[j] < 1 && eval("cf.trunk_enable" + j).checked == true)
+                        msg += addstr(msg_trunking_least, j + 1);
+
+                    if (2 == getSwitchChipType(cf)) {
+                        if (count[j] > 4 && eval("cf.trunk_enable" + j).checked == true)
+                            msg += addstr(msg_trunking_most, j + 1, "4");
+                    }
+                    else if (3 == getSwitchChipType(cf)) {
+                        if (count[j] > 8 && eval("cf.trunk_enable" + j).checked == true)
+                            msg += addstr(msg_trunking_most, j + 1, "8");
+                    }
+                    else {
+                        if (count[j] > 8 && eval("cf.trunk_enable" + j).checked == true)
+                            msg += addstr(msg_trunking_most, j + 1, "8");
+                    }
+
+                    if (msg.length) {
+                        cf.trunk_setting.value = oldtrunk_setting;
+                        break;
+                    }
+
+                    for (i = j + 1; i < maxCount && eval("cf.trunk_enable" + j).checked; i++) {
+                        if (eval("cf.trunk_enable" + i).checked && (port_maps[j] & port_maps[i])) {
+                            msg += addstr(msg_trunking_port, j + 1, i + 1);
+                            break;
+                        }
+                    }
+
+
+                    if (msg.length) {
+                        cf.trunk_setting.value = oldtrunk_setting;
+                        break;
+                    }
+
+                    cf.trunk_setting.value += port_maps[j] + ":" + ((eval("cf.trunk_enable" + j).checked == true) ? 1 : 0) + ":" + trunk_key_maps[j] + ";";
+                }
+
+                if (2 == getSwitchChipType(cf)) {
+                    var deaultPortMap = "2047";
+                    if (cf.h_mirror_enable.value == 'enable')
+                        msg += msg_trunk_mirror_exclusion;
+
+                    if (cf.h_vlan_type.value == "qvlan")
+                        msg += msg_trunk_qvlan_exclusion;
+
+                    if (-1 == cf.vlan_p_config.value.indexOf(deaultPortMap))
+                        msg += msg_trunk_default_pvlan_exclusion;
+                }
+
+            }
+            else {
+                var vlan_lacp_str = new Array();
+
+                if (cf.h_lacp_enable.value == "1") {
+                    for (j = 0; j < arr_lacp_group_cfg.length - 1; i++) {
+                        if (arr_lacp_group_cfg[j].split(":")[3] == "1") {
+                            vlan_lacp_str[arr_lacp_group_cfg[j].split(":")[0]] = cf.vlan_lag_port_set.value.value.split(";")[arr_lacp_group_cfg[j].split(":")[0]] + ";";
+                        }
+                    }
+                }
+
+                for (i = 0; i < maxCount; i++) {
+                    if (!vlan_lacp_str[i])
+                        arr_lag_vlan += "1:0:1:1:0;";
+                    else
+                        arr_lag_vlan += vlan_lacp_str[i];
+                }
+            }
+
+            if (!msg)
+                cf.vlan_lag_port_set.value = arr_lag_vlan;
+
+            dataToHidden(cf);
+            //alert(cf.trunk_setting.value);
+            return checkMsg(msg);
+        }
+
+        function set_trunk_enable() {
+            var cf = document.forms[0];
+            var i, j;
+            var gPorts = cf.g_port_bits.value;
+            var dflag = false, dflag1 = (getRadioCheckedValue(cf.trunk_enable) == "disable");
+
+            for (i = 0; i < maxCount; i++) {
+                var trunks = document.getElementsByName("trunk" + i);
+                var trunks_key = document.getElementsByName("trunk" + i + "_key");
+                setDisabled(dflag1, eval("cf.trunk_enable" + i));
+                dflag = (eval("cf.trunk_enable" + i).checked != true);
+                for (j = 0; j < trunks.length; j++) {
+                    setDisabled((dflag == true) || (dflag1 == true), trunks[j]);
+                }
+
+                for (j = 0; j < trunks_key.length; j++) {
+                    setDisabled((dflag == true) || (dflag1 == true), trunks_key[j]);
+                }
+            }
+        }
+
+        function get_port_qvlan(str) {
+            var vlan = new Array();
+            var tmp_str = new Array();
+
+            if (isNaN(str)) {
+                var tmp_array = str.split(",");
+
+                for (j = 0; j < tmp_array.length; j++) {
+                    if (isNaN(tmp_array[j])) {
+                        tmp_str = tmp_array[j].split("~");
+                        for (k = parseInt(tmp_str[0]); k <= parseInt(tmp_str[1]); k++)
+                            vlan[k] = 1;
+                    } else
+                        vlan[parseInt(tmp_array[j])] = 1;
+                }
+            }
+            else
+                vlan[parseInt(str)] = 1;
+
+            return vlan;
+        }
+
+        function init() {
+            //createSwitchBitsArray();
+            var cf = document.forms[0];
+            var trunk = new Array();
+            var t = 0, i = 0, n = 0;
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var trunkRows = new Array();
+            var objTb = document.getElementById("portlist");
+
+            maxCount = cf.trunk_setting.value.split(";").length - 1;
+            //alert("maxCount = " + maxCount);
+
+            //trunkRows = cf.trunk_ports.value.split(";");
+            //maxCount = trunkRows.length-1;
+            for (i = 0; i < maxCount; i++) {
+                var objTr = objTb.insertRow(i);
+                if (i % 2)
+                    objTr.className = "table_black";
+                else
+                    objTr.className = "table_right";
+                t = 0;
+                var objTd = objTr.insertCell(t++);
+                objTd.height = 25;
+                objTd.width = 150;
+                objTd.align = "center";
+                objTd.valign = "middle";
+                objTd.innerHTML = i + 1;
+
+                objTd = objTr.insertCell(t++);
+                objTd.align = "center";
+                objTd.valign = "middle";
+                var objTbTmp1 = document.createElement("TABLE");
+                objTbTmp1.border = 0;
+                objTbTmp1.cellspacing = 0;
+                objTbTmp1.insertRow(0);
+                objTbTmp1.rows[0].insertCell(0);
+                var objTbTmp2 = document.createElement("TABLE");
+                objTbTmp2.border = 0;
+                objTbTmp2.cellspacing = 0;
+                var objTbTmp3 = document.createElement("TABLE");
+                objTbTmp3.border = 0;
+                objTbTmp3.cellspacing = 0;
+                objTbTmp1.rows[0].cells[0].appendChild(objTbTmp2);
+                objTbTmp1.rows[0].cells[0].appendChild(objTbTmp3);
+                objTd.appendChild(objTbTmp1);
+                comCreateElement(ports, gPorts, objTbTmp2, "checkbox", "trunk" + i);
+
+                add_trunk_key(objTbTmp3, ("trunk" + i + "_key"));
+
+                objTd = objTr.insertCell(t++);
+                objTd.width = 150;
+                objTd.align = "center";
+                objTd.valign = "center";
+
+                objTd.innerHTML = "<input type='checkbox' name='trunk_enable" + i + "' onClick='set_trunk_enable()' align='center'/>";
+            }
+
+            trunk = cf.trunk_setting.value.split(";"); t = 0;
+            while (t < (trunk.length - 1)) {
+                var trunk_setting = new Array();
+                trunk_setting = trunk[t].split(":");
+
+                i = 0; n = 0; ports = cf.port_bits.value;
+                while (ports) {
+                    if (ports & 1) {
+                        if (trunk_setting[0] & (1 << i))
+                            eval("cf.trunk" + t)[n].checked = true;
+                        n++;
+                    }
+                    ports >>= 1;
+                    i++;
+                }
+
+                for (i = 0; i < arr_lag_key.length; i++) {
+                    if (trunk_setting[2] & (eval("cf.trunk" + t + "_key")[i].value))
+                        eval("cf.trunk" + t + "_key")[i].checked = true;
+                }
+
+                if (trunk_setting[1] == 1)
+                    eval("cf.trunk_enable" + t).checked = true;
+                t++;
+            }
+
+            dataToVisible(cf);
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+            else
+                set_trunk_enable();
+        }
+
+        function add_trunk_key(objTb, inputName) {
+
+            var i = 0;
+            var objTr, objTd;
+            var strInput;
+
+            objTr = objTb.insertRow(0);
+            objTr.insertCell(0).innerHTML = "&nbsp;&nbsp;";
+
+            for (i = 0; i < arr_lag_key.length; i++) {
+
+                objTd = objTr.insertCell(i * 2 + 1);
+                objTd.innerHTML = "<div align='center'>" + arr_lag_key[i] + "</div>";
+                if (0 == arr_key_type[i])
+                    objTd.style.display = "none";
+
+
+                objTd = objTr.insertCell(i * 2 + 2);
+                strInput = "<input type='" + "checkbox" + "' " + "name='" + inputName + "' ";
+                strInput += ("value='" + arr_key_value[i] + "' ");
+                strInput += " style=margin-bottom:2px ";
+                strInput += ">";
+                objTd.innerHTML = strInput;
+                if (0 == arr_key_type[i])
+                    objTd.style.display = "none";
+
+            }
+
+            return;
+
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+            var i = 0, j = 0;
+
+            setDisabled(true, cf.Save, cf.Cancel);
+            setDisabled(true, cf.trunk_enable[0], cf.trunk_enable[1]);
+
+            for (j = 0; j < maxCount; j++) {
+                for (i = 0; i < cf.trunk0.length; i++)
+                    setDisabled(true, eval("cf.trunk" + j + "[" + i + "]"));
+                setDisabled(true, eval("cf.trunk_enable" + j));
+            }
+        }
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span
+                                        class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">链路备份</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">端口汇聚</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;汇聚配置</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="radio" name="trunk_enable" value="enable" autocomplete="off"
+                                    onClick="set_trunk_enable()">启用&nbsp;
+                                <input type="radio" name="trunk_enable" value="disable" autocomplete="off"
+                                    onClick="set_trunk_enable()">禁用
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1">
+                        <tr align="center" valign="middle" class="td2">
+                            <td width="150" height="25">汇聚组</td>
+                            <td>端口列表</td>
+                            <td width="150">启用</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr class="table_black">
+                <td height="25" colspan="2">
+                    <table id="portlist" width="1002" border="0" cellpadding="0" cellspacing="1">
+
+
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="配置" onClick="return checkData();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="取消"
+                            onClick="location.href='setup.cgi?next_file=trunk.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+        <input type="hidden" name="trunk_setting" value="@trunk_setting#">
+        <input type="hidden" name="vlan_lag_port_set" value="@vlan_lag_port_set#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="trunk.html">
+        <input type="hidden" name="next_file" value="trunk.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_status" value="@port_status#">
+        <input type="hidden" name="h_ring_enable" value="@h_ring_enable#">
+        <input type="hidden" name="ring_config" value="@ring_config#">
+        <input type="hidden" name="rstp_setting" value="@rstp_setting#">
+        <input type="hidden" name="h_rstp_enable" value="@h_rstp_enable#">
+        <input type="hidden" name="h_erps_enable" value="@h_erps_enable#">
+        <input type="hidden" name="erps_node_config" value="@erps_node_config#">
+        <input type="hidden" name="erps_ring_config" value="@erps_ring_config#">
+        <input type="hidden" name="rd_code" value="@rd_code#">
+        <input type="hidden" name="h_vlan_type" value="@h_vlan_type#">
+        <input type="hidden" name="vlan_p_config" value="@vlan_p_config#">
+        <input type="hidden" name="vlan_port_set" value="@vlan_port_set#">
+        <input type="hidden" name="h_mirror_enable" value="@h_mirror_enable#">
+        <input type="hidden" name="loopback_enable" value="@loopback_enable#">
+        <input type="hidden" name="loopback_portconfig" value="@loopback_portconfig#">
+        <input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+        <input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+        <input type="hidden" name="lacp_group_cfg" value="@lacp_group_cfg#">
+        <input type="hidden" name="port_map" value="@port_map#">
+    </form>
+</body>
+
+</html>

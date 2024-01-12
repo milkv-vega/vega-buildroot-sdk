@@ -1,0 +1,362 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>IEEE 802.1X 端口认证</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        <!--
+        var auth_config = 0;
+        function init()
+        {
+            var cf = document.forms[0];
+            //document.getElementById("logo").innerHTML = getLogoByType(cf.switch_type.value);
+
+            var i = 0, n = 0,  dflag;
+            var ports = cf.port_bits.value;
+            
+
+            dataToVisible(cf);
+
+            auth_config = cf.auth_setting.value;
+
+            if(auth_config=="")
+            auth_config = 0;
+
+            while(ports)
+            {
+                if(ports & 1)
+                {
+                    if(auth_config & (1 << i))
+                        eval("cf.auth_port_" + i)[0].checked = true;
+                    else
+                        eval("cf.auth_port_" + i)[1].checked = true;
+                    i++;
+                }else 
+                  {
+                            if(i != 0)
+                            i++;
+                  }
+                ports >>= 1;
+            }
+
+            if(cf.loader.value != "admin")
+                disable_all_intput();
+            else
+                set_auth_enable();
+        }
+
+        function set_auth_enable()
+        {
+            var i = 0, n = 0,m = 0;
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.auth_enable) == "disable");
+            var ports = cf.port_bits.value;
+            var g_ports = cf.g_port_bits.value;
+
+            setDisabled(dflag, cf.radius_local[0], cf.radius_local[1], cf.reauth_time);
+
+            while(ports)
+            {
+                if(ports & 1)
+                {
+                    /*if(g_ports & (1 << m))
+                    {
+                        setDisabled(true, eval("cf.auth_port_" + i)[0], eval("cf.auth_port_" + i)[1], cf.force_reauth[n]);
+                    } else {*/
+        setDisabled(dflag, eval("cf.auth_port_" + i)[0], eval("cf.auth_port_" + i)[1]);
+
+        var dflag1 = (getRadioCheckedValue(eval("cf.auth_port_" + i)) == "disable");
+
+        if ((dflag == true) || (dflag1 == true))
+            dflag1 = true;
+
+        setDisabled(dflag1, cf.force_reauth[n]);
+        //}
+        n++;
+        i++;
+                    }else
+        {
+            if (i != 0)
+                i++;
+        }
+        ports >>= 1;
+        m++;
+                   
+                }
+        set_radius_local();
+            }
+
+        function set_radius_local() {
+            var i;
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.auth_enable) == "disable");
+            var dflag1 = (getRadioCheckedValue(cf.radius_local) == "enable");
+
+            if ((dflag == true) || (dflag1 == true))
+                dflag = true;
+
+            setDisabled(dflag, cf.radius_ip, cf.radius_port, cf.radius_prekey, cf.account_ip, cf.account_port);
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+            var i = 0, n = 0;
+            var ports = cf.port_bits.value;
+
+            setDisabled(true, cf.auth_enable[0], cf.auth_enable[1]);
+            setDisabled(true, cf.radius_local[0], cf.radius_local[1]);
+            setDisabled(true, cf.reauth_time, cf.radius_prekey);
+            setDisabled(true, cf.radius_ip, cf.radius_port, cf.account_ip, cf.account_port);
+            setDisabled(true, cf.Save, cf.Cancel);
+            while (ports) {
+                if (ports & 1) {
+                    setDisabled(true, eval("cf.auth_port_" + i)[0], eval("cf.auth_port_" + i)[1], cf.force_reauth[n]);
+                    n++;
+                    i++;
+                } else {
+                    if (i != 0)
+                        i++;
+                }
+                ports >>= 1;
+
+            }
+        }
+
+        function checkData() {
+            var i = 0, cf = document.forms[0], n = 0;
+            var auth_setting = 0, msg = "";
+            var ports = 0;
+
+            if (getRadioCheckedValue(cf.auth_enable) == "enable") {
+                msg += checkInt(cf.reauth_time, msg_reauth, 60, 40000000, true);
+
+                ports = cf.port_bits.value;
+                while (ports) {
+                    if (ports & 1) {
+                        if (getRadioCheckedValue(eval("cf.auth_port_" + i)) == "enable")
+                            auth_setting |= 1 << i;
+                        i++;
+                    } else {
+                        if (i != 0)
+                            i++;
+                    }
+                    ports >>= 1;
+
+                }
+                cf.auth_setting.value = auth_setting;
+
+                if (getRadioCheckedValue(cf.radius_local) == "disable") {
+                    msg += checkHostName(cf.radius_ip, msg_radius);
+
+                    if (isBlank(cf.account_ip.value) == false)
+                        msg += checkHostName(cf.account_ip, msg_AAA);
+                    msg += checkInt(cf.radius_port, msg_radius_port, 0, 65535, true);
+                    msg += checkInt(cf.account_port, msg_AAA_port, 0, 65535, true);
+                    if (isIllegalKey(cf.radius_prekey.value) == false)
+                        msg += msg_invalid_key;
+                }
+            }
+
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+
+        function resend_auth(port) {
+            var cf = document.forms[0];
+
+            cf.todo.value = "send_reauth";
+            cf.reauth_port.value = port;
+            return true;
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"
+                                style="background-image:url(./images/logo.png);background-repeat:no-repeat" ;></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+                                <a href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a>
+                                <a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a
+                                    href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td width="352" height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">访问控制</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">IEEE 802.1X 端口认证</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" height="300" border="0" align="center" cellspacing="0">
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1001" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;IEEE 802.1X认证</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="radio" name="auth_enable" value="enable" autocomplete="off"
+                                    onClick="set_auth_enable()">
+                                启用
+                                &nbsp;
+                                <input type="radio" name="auth_enable" value="disable" autocomplete="off"
+                                    onClick="set_auth_enable()">
+                                禁用
+                            </td>
+                        </tr>
+                        <tr align="left" valign="top" class="table_left">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;定时更新认证</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="text" name="reauth_time" maxlength="8" class="input_rstp"
+                                    value="@reauth_time#">
+                                秒 (范围 60~40,000,000)
+                            </td>
+                        </tr>
+                        <tr align="left" valign="top" class="table_left">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;Radius服务器</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="radio" name="radius_local" value="enable" autocomplete="off"
+                                    onClick="set_radius_local()">
+                                本地
+                                &nbsp;
+                                <input type="radio" name="radius_local" value="disable" autocomplete="off"
+                                    onClick="set_radius_local()">
+                                远程
+                            </td>
+                        </tr>
+
+                        <tr align="left" valign="top" class="table_left">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;认证服务器配置</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                IP地址:
+                                <input type="text" name="radius_ip" class="input_user" maxlength="15"
+                                    value="@radius_ip#">
+                                &nbsp;
+                                端口号:
+                                <input type="text" name="radius_port" maxlength="5" class="input_txt"
+                                    value="@radius_port#">
+                                (范围 0~65535)
+                            </td>
+                        </tr>
+                        <tr align="left" valign="top" class="table_left">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;认证共享密码值</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="text" name="radius_prekey" maxlength="64" class="input_auth"
+                                    value="@radius_prekey#">
+                            </td>
+                        </tr>
+                        <tr align="left" valign="top" class="table_left">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;计费服务器配置</td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;IP地址:
+                                <input type="text" name="account_ip" class="input_user" maxlength="15"
+                                    value="@account_ip#">(可选)&nbsp;端口号:
+                                <input type="text" name="account_port" maxlength="5" class="input_txt"
+                                    value="@account_port#">(范围 0~65535)
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1"
+                        style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+                        <tr class="td2">
+                            <td height="25" width="150" align="center" valign="middle">端口号</td>
+                            <td height="25" align="center" valign="middle">IEEE 802.1x 端口认证</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1" id="portlist">
+                        @auth_portlist#
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="配置" onClick="return checkData();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="取消"
+                            onClick="location.href='setup.cgi?next_file=auth.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        </table>
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="h_auth_enable" value="@h_auth_enable#">
+        <input type="hidden" name="h_radius_local" value="@h_radius_local#">
+        <input type="hidden" name="auth_setting" value="@auth_setting#">
+        <input type="hidden" name="reauth_port" value="">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="auth.html">
+        <input type="hidden" name="next_file" value="auth.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+    </form>
+</body>
+
+</html>

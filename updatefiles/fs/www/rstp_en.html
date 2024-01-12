@@ -1,0 +1,1290 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>RSTP</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        < !-
+            function init() {
+                var cf = document.forms[0];
+                var t = 0, i = 0;
+                var rstp = new Array();
+                var ports = cf.port_bits.value;
+                var gPorts = cf.g_port_bits.value;
+                var arrType = new Array();
+                var arrName = new Array();
+                var arrClassName = new Array();
+                var arrWidth = new Array();
+                var arrValue = new Array();
+                var arrText = new Array();
+
+                show_language_flag();
+                for (i = 0; i < 5; i++) {
+                    if (i == 0) {
+                        arrType[i] = "input";
+                        arrName[i] = "port_cost";
+                        arrClassName[i] = "input_rstp";
+                        arrWidth[i] = 175;
+                    } else if (i == 4) {
+                        arrType[i] = "select";
+                        arrName[i] = "nostp";
+                        arrClassName[i] = "select1";
+                        arrWidth[i] = 202;
+                    } else {
+                        arrType[i] = "select";
+                        if (i == 1)
+                            arrName[i] = "priority";
+                        else if (i == 2)
+                            arrName[i] = "p2p";
+                        else
+                            arrName[i] = "adminEdge";
+                        arrWidth[i] = 175;
+                        arrClassName[i] = "select1";
+                    }
+                }
+                comCreateTableElementById(1, ports, gPorts, document.getElementById("portlist"), arrType, arrName, arrClassName, arrWidth);
+                //function comCreateTdElementById(objsFromName, beginIndex, endIndex, nType, elementValue, onChangeName, onClickName, arrValue, arrText)
+                comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 4);//port_cost
+                arrValue[0] = 0; arrText[0] = 0;
+                for (i = 0; i < 16; i++) {
+                    arrValue[i] = i * 16;
+                    arrText[i] = i * 16;
+                }
+                comCreateTdElementById(document.getElementsByName(arrName[1]), 0, document.getElementsByName(arrName[1]).length - 1, 2, "", "", "", arrValue, arrText);//priority
+                arrValue = arrValue.splice(0, 3);
+                arrText = arrText.splice(0, 3);
+                for (i = 0; i < arrValue.length; i++) {
+                    arrValue[i] = i;
+                    switch (i) {
+                        case 0:
+                            arrText[0] = "Yes";
+                            break;
+                        case 1:
+                            arrText[1] = "No";
+                            break;
+                        case 2:
+                            arrText[2] = "Automatic";
+                    }
+                }
+                //alert(cf.p2p);
+                comCreateTdElementById(document.getElementsByName(arrName[2]), 0, document.getElementsByName(arrName[2]).length - 1, 2, "", "", "", arrValue, arrText)//p2p
+                arrValue = arrValue.splice(0, 2);
+                arrText = arrText.splice(0, 2);
+                arrValue[0] = 1; arrValue[1] = 0;
+                comCreateTdElementById(document.getElementsByName(arrName[3]), 0, document.getElementsByName(arrName[3]).length - 1, 2, "", "", "", arrValue, arrText)//adminEdge
+                arrValue = arrValue.splice(0, 2);
+                arrText = arrText.splice(0, 2);
+                arrValue[0] = 0; arrValue[1] = 1;
+                comCreateTdElementById(document.getElementsByName(arrName[4]), 0, document.getElementsByName(arrName[4]).length - 1, 2, "", "", "", arrValue, arrText)//nostp
+
+                rstp = cf.rstp_setting.value.split(";"); t = 0; i = 0
+                while (ports) {
+                    var rstp_cfg = new Array();
+                    rstp_cfg = rstp[t].split(":");
+                    if (ports & 1) {
+                        cf.port_cost[i].value = rstp_cfg[0];
+                        cf.priority[i].value = rstp_cfg[1];
+                        cf.p2p[i].value = rstp_cfg[2];
+                        cf.adminEdge[i].value = rstp_cfg[3];
+                        cf.nostp[i++].value = rstp_cfg[4];
+                        //alert(rstp_cfg[3] + "," + rstp_cfg[4]);
+                    }
+                    ports >>= 1;
+                    t++;
+                }
+
+
+                dataToVisible(cf);
+                if (cf.loader.value != "admin")
+                    disable_all_intput();
+                else
+                    set_rstp_enable();
+            }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.rstp_enable[0], cf.rstp_enable[1]);
+            setDisabled(true, cf.rstp_priority, cf.hello_time, cf.forwarding_delay, cf.max_age);
+            setDisabled(true, cf.port_config);
+            setDisabled(true, cf.Save, cf.Cancel);
+            for (i = 0; i < cf.port_cost.length; i++)
+                setDisabled(true, cf.port_cost[i], cf.priority[i], cf.p2p[i], cf.adminEdge[i], cf.nostp[i]);
+        }
+
+        function set_rstp_enable() {
+            var i;
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.rstp_enable) == "enable");
+
+            setDisabled(!dflag, cf.rstp_priority, cf.hello_time, cf.forwarding_delay, cf.max_age);
+            setDisabled(!dflag, cf.port_config);
+            for (i = 0; i < cf.port_cost.length; i++)
+                setDisabled(!dflag, cf.port_cost[i], cf.priority[i], cf.p2p[i], cf.adminEdge[i], cf.nostp[i]);
+        }
+
+        function checkData() {
+            var i, a, b, c;
+            var msg = "", config = "", str = "", strPort;
+            var cf = document.forms[0];
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+
+            if (getRadioCheckedValue(cf.rstp_enable) == "enable") {
+                msg += checkInt(cf.hello_time, rstp_hello_time, 1, 10, true);
+                msg += checkInt(cf.forwarding_delay, rstp_forward_delay, 4, 30, true);
+                msg += checkInt(cf.max_age, rstp_max_age, 6, 40, true);
+
+                if ((2 * (parseInt(cf.forwarding_delay.value, 10) - 1)) < cf.max_age.value)
+                    msg += rstp_delay_max_age;
+
+                if (2 * (parseInt(cf.hello_time.value, 10) + 1) > cf.max_age.value)
+                    msg += rstp_max_age_hello;
+
+                a = 0; b = 0; c = 0;
+                for (i = 0; i < cf.switch_port.value; i++) {
+                    if (ports & 1) {
+                        c++;
+                        if (gPorts & 1)//G
+                            strPort = "G" + (++a);
+                        else
+                            strPort = (++b)
+                        if ((str = checkInt(cf.port_cost[a + b - 1], rstp_port_cost, 1, 200000000, true)) != "")
+                            msg += addstr(rstp_port_war, strPort) + str;
+                        config += cf.port_cost[a + b - 1].value + ":" + cf.priority[a + b - 1].value + ":" + cf.p2p[a + b - 1].value + ":" + cf.adminEdge[a + b - 1].value + ":" + cf.nostp[a + b - 1].value + ";";
+
+                        if ((cf.nostp[a + b - 1].value == 0) && cf.h_trunk_enable.value == 'enable')//trunk is enable
+                        {
+                            var arrTrunkConfig = cf.trunk_setting.value.split(";");
+                            var arrItem;
+
+                            for (j = 0; j < arrTrunkConfig.length - 1; j++) {
+                                arrItem = arrTrunkConfig[j].split(':');
+
+                                if (arrItem[1] == '1') {
+                                    if ((arrItem[0] >> i) & 1) {
+                                        msg += addstr(rstp_port_trunk, c);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (cf.loopback_enable.value == "enable") {
+                            var loopback_cfg = cf.loopback_portconfig.value.split(";");
+                            var loopback_port = loopback_cfg[i].split(":");
+                            if ((cf.nostp[a + b - 1].value == 0) && loopback_port[0] == 1) {
+                                msg += addstr(rstp_port_trunk, strPort);
+                            }
+                        }
+                        if (cf.h_lacp_enable.value == '1') {
+                            var port_lacp = cf.lacp_port_cfg.value.split(";");
+                            var port_lacp_set = port_lacp[i].split(":");
+                            if ((cf.nostp[a + b - 1].value == 0) && (port_lacp_set[2] == '1')) {
+                                msg += addstr(rstp_port_lacp, strPort);
+                                flag = 1;
+                            }
+                        }
+                    } else
+                        config += "20000:128:2:0:0;"
+                    ports >>= 1;
+                    gPorts >>= 1;
+                }
+
+                cf.rstp_setting.value = config;
+            }
+
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn3">中文版</span></a>
+                                <a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP:@clinet_ip# &nbsp;VISITOR MAC:@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr class="table_title">
+                            <td height="25"><strong class="style4">&nbsp;&nbsp;Current Page &gt;&gt;</strong><span
+                                    class="style4"> Link Backup </span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3"> RSTP</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;RSTP Configuration </td>
+                            <td height="25" align="left" valign="middle" colspan="9">&nbsp;
+                                <input type="radio" name="rstp_enable" value="enable" autocomplete="off"
+                                    onClick="set_rstp_enable()">
+                                Enable
+                                &nbsp;
+                                <input type="radio" name="rstp_enable" value="disable" autocomplete="off"
+                                    onClick="set_rstp_enable()">
+                                Disable
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" align="center" cellpadding="0" cellspacing="1">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Switch Priority </td>
+                            <td height="25" class="table_right">&nbsp;
+                                <select name="rstp_priority" size="1" style="width: 68px;">
+                                    <option value="0" align="center">0</option>
+                                    <option value="4096" align="center">4096</option>
+                                    <option value="8192" align="center">8192</option>
+                                    <option value="12288" align="center">12288</option>
+                                    <option value="16384" align="center">16384</option>
+                                    <option value="20480" align="center">20480</option>
+                                    <option value="24576" align="center">24576</option>
+                                    <option value="28672" align="center">28672</option>
+                                    <option value="32768" align="center">32768</option>
+                                    <option value="36864" align="center">36864</option>
+                                    <option value="40960" align="center">40960</option>
+                                    <option value="45056" align="center">45056</option>
+                                    <option value="49152" align="center">49152</option>
+                                    <option value="53248" align="center">53248</option>
+                                    <option value="57344" align="center">57344</option>
+                                    <option value="61440" align="center">61440</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Polling Interval</td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input type="text" name="hello_time" maxlength="2" class="input_txt"
+                                    value="@hello_time#">
+                                s (scope 1~10)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Forwarding Delay </td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input type="text" name="forwarding_delay" maxlength="2" class="input_txt"
+                                    value="@forwarding_delay#">
+                                s (scope 4~30)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;Max Aging Time</td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input type="text" name="max_age" maxlength="2" class="input_txt" value="@max_age#">
+                                s (scope 6~40)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;RSTP Status </td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input name="port_config" value="RSTP Current Status" class="showbtn7"
+                                    onClick="openDataSubWin('setup.cgi?next_file=stp_en.html',bigsub)" type="button" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1">
+                        <tr align="center" valign="middle" class="td2">
+                            <td width="100" height="25" class="td11"> Port ID </td>
+                            <td width="175" height="25">Path Cost </td>
+                            <td width="177">Port Priority </td>
+                            <td width="173" height="25">Point To Point Links </td>
+                            <td width="175" height="25">Connect to Terminal</td>
+                            <td width="195" height="25">Do Join RSTP </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" align="center" cellpadding="0" cellspacing="1" id="portlist">
+                        <!--
+                            <tr align="center" class="table_black">
+                                <td width="100">1</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>2</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td >3</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right" >
+                                <td>4</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>5</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>6</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>7</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>8</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>9</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>10</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>11</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>12</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>13</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>14</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>15</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>16</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>17</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>18</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>19</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>20</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>21</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>22</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>23</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>24</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_black">
+                                <td>G1</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr><tr align="center" valign="middle" class="table_right">
+                                <td>G2</td>
+                                <td width="175" align="center"><input type="text" name="port_cost" maxlength="9" class="input_rstp" /></td>
+                                <td width="175"><select name="priority" class="select_rstp">
+                                        <option value="0" align="center">0</option>
+                                        <option value="16" align="center">16</option>
+                                        <option value="32" align="center">32</option>
+                                        <option value="48" align="center">48</option>
+                                        <option value="64" align="center">64</option>
+                                        <option value="80" align="center">80</option>
+                                        <option value="96" align="center">96</option>
+                                        <option value="112" align="center">112</option>
+                                        <option value="128" align="center">128</option>
+                                        <option value="144" align="center">144</option>
+                                        <option value="160" align="center">160</option>
+                                        <option value="176" align="center">176</option>
+                                        <option value="192" align="center">192</option>
+                                        <option value="208" align="center">208</option>
+                                        <option value="224" align="center">224</option>
+                                        <option value="240" align="center">240</option>
+                                    </select></td>
+                                <td width="175"><select name="p2p" class="select_rstp">
+                                        <option value="0" align="center"></option>
+                                        <option value="1" align="center"></option>
+                                        <option value="2" align="center">Զ</option>
+                                    </select></td>
+                                <td width="175" align="center"><select name="adminEdge" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                                <td><select name="nostp" class="select3">
+                                        <option value="1" align="center"></option>
+                                        <option value="0" align="center"></option>
+                                    </select></td>
+                            </tr>-->
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="Submit" onClick="return checkData();" class="showbtn6">
+                        &nbsp;
+                        <input type="button" name="Cancel" value="Cancel"
+                            onClick="location.href='setup.cgi?next_file=rstp_en.html'" class="showbtn6">
+                    </span></td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="h_rstp_enable" value="@h_rstp_enable#">
+        <input type="hidden" name="h_rstp_priority" value="@h_rstp_priority#">
+        <input type="hidden" name="rstp_setting" value="@rstp_setting#">
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="rstp_en.html">
+        <input type="hidden" name="next_file" value="rstp_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="trunk_setting" value="@trunk_setting#">
+        <input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+        <input type="hidden" name="loopback_enable" value="@loopback_enable#">
+        <input type="hidden" name="loopback_portconfig" value="@loopback_portconfig#">
+        <input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+        <input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+    </form>
+</body>
+
+</html>

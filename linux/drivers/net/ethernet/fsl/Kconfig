@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Fislink device configuration
+#
+
+config FSL
+	tristate "FSL ethernet controller "
+	depends on (FSL_SOC || INET)  
+	select PHYLIB
+	help
+	  Say Y here if you want to use the built-in 10/100 Fast ethernet
+	  controller on some Motorola ColdFire and Freescale i.MX processors.
+
+config NET_VENDOR_FSL
+	bool "Fislink devices"
+	default n
+	depends on PCI || FSL_SOC || INET || COMPILE_TEST
+	help
+	  If you have a network (Ethernet) card belonging to this class, say Y.
+
+	  Note that the answer to this question doesn't directly affect the
+	  kernel: saying N will just cause the configurator to skip all
+	  the questions about Freescale devices. If you say Y, you will be
+	  asked for your specific card in the following questions.
+
+
+
+
+

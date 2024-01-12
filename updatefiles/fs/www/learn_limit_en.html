@@ -1,0 +1,568 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>MAC Learn Limit</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="Javascript" for="document" event="onkeydown">
+        if (event.keyCode == 13) {
+            return additem();
+        }
+    </script>
+    <script language="JavaScript">
+        var port_count = 0;
+        var fid_count = 0;
+
+        function init() {
+            var cf = document.forms[0];
+            var t = 0, b = 0, i = 0, tmp, n = 0, a = 0;
+            var umac = new Array();
+            var mac = new Array();
+            var strPort;
+
+            show_language_flag();
+            set_port();
+            set_sys_enable();
+            set_port_enable();
+            set_fid_enable();
+
+            umac = cf.lrn_limit_sys.value.split(";");
+            for (i = 0; i < umac.length - 1; i++) {
+                mac = umac[i].split(":");
+                if (mac[1] == "1") {
+                    cf.global_limit_enable[0].checked = true;
+                    cf.global_limit_thrd.value = mac[2];
+                }
+                else
+                    cf.global_limit_enable[1].checked = true;
+            }
+
+            umac = cf.lrn_limit_port.value.split(";");
+            for (i = 0; i < umac.length - 1; i++) {
+                list_add_limit_port(0, umac[i]);
+            }
+
+            umac = cf.lrn_limit_fid.value.split(";");
+            for (i = 0; i < umac.length - 1; i++) {
+                list_add_limit_fid(0, umac[i]);
+            }
+
+            //dataToVisible(cf);
+
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+        }
+
+        function additem() {
+            var cf = document.forms[0];
+            var msg = "";
+            var port_maps = 0;
+            var i;
+            var flag = false;
+            var overwrite_port = 0;
+            var overwrite_fid = 0;
+            var umap = new Array();
+            var port_cfg = "";
+            var fid_cfg = "";
+            var port_map_array = cf.port_map.value.split(";");
+
+
+            //global
+            if (getRadioCheckedValue(cf.global_limit_enable) == "disable") {
+                //ex_action:ena:thrd
+                cf.lrn_limit_sys.value = "1" + ":" + "0" + ":" + "0";
+            }
+            else {
+                msg += checkInt(cf.global_limit_thrd, "global_limit_thrd", 1, 16000, true);
+                if (msg != "")
+                    return checkMsg(msg);
+                cf.lrn_limit_sys.value = "1" + ":" + "1" + ":" + cf.global_limit_thrd.value;
+            }
+
+
+            //port
+            if (getRadioCheckedValue(cf.port_limit_enable) == "disable") {
+                port_cfg = "0" + ":" + cf.port_list.value + ":" + cf.port_limit_thrd.value;
+            }
+            else {
+                if (cf.port_list.value == -1)
+                    msg += msg_no_select_port;
+                msg += checkInt(cf.port_limit_thrd, "port_limit_thrd", 1, 16000, true);
+                port_cfg = "1" + ":" + cf.port_list.value + ":" + cf.port_limit_thrd.value;
+
+                for (i = 1; i < cf.port_cfg_table.options.length; i++) {
+                    if (cf.port_list.value == cf.port_cfg_table.options[i].value.split(":")[1]) {
+                        flag = confirm("port=" + port_map_array[cf.port_list.value] + " already exist, overwrite?");
+                        if (flag == true) {
+                            overwrite_port = i;
+                            break;
+                        }
+                        else
+                            return false;
+                    }
+                }
+                if (msg != "")
+                    return checkMsg(msg);
+                list_add_limit_port(overwrite_port, port_cfg);
+            }
+
+            //fid
+            if (getRadioCheckedValue(cf.fid_limit_enable) == "disable") {
+                fid_cfg = "0" + ":" + cf.vid.value + ":" + cf.fid_limit_thrd.value;
+            }
+            else {
+                msg += checkInt(cf.vid, "VID", 1, 4094, true);
+                msg += checkInt(cf.fid_limit_thrd, "fid_limit_thrd", 1, 16000, true);
+                fid_cfg = "1" + ":" + cf.vid.value + ":" + cf.fid_limit_thrd.value;
+
+                for (i = 1; i < cf.fid_cfg_table.options.length; i++) {
+                    if (cf.vid.value == cf.fid_cfg_table.options[i].value.split(":")[1]) {
+                        flag = confirm("vlan=" + cf.vid.value + " already exist, overwrite?");
+                        if (flag == true) {
+                            overwrite_fid = i;
+                            break;
+                        }
+                        else
+                            return false;
+                    }
+                }
+                if (msg != "")
+                    return checkMsg(msg);
+
+                list_add_limit_fid(overwrite_fid, fid_cfg);
+            }
+        }
+
+        function delitem() {
+            var cf = document.forms[0];
+            var pos_port = cf.port_cfg_table.selectedIndex;
+            var pos_fid = cf.fid_cfg_table.selectedIndex;
+
+            if (pos_port > 0) {
+                list_del_limit_port(pos_port);
+            }
+
+            if (pos_fid > 0) {
+                list_del_limit_fid(pos_fid);
+            }
+        }
+
+        function set_sys_enable() {
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.global_limit_enable) == "disable");
+
+            if (dflag)
+                cf.global_limit_thrd.value = "";
+            setDisabled(dflag, cf.global_limit_thrd);
+        }
+
+        function set_port_enable() {
+            var cf = document.forms[0];
+            var i = 0, t = 0;
+            var ports = cf.port_bits.value;
+            var dflag = (getRadioCheckedValue(cf.port_limit_enable) == "disable");
+
+            if (dflag) {
+                cf.port_limit_thrd.value = "";
+                cf.port_list.value = -1;
+            }
+
+            setDisabled(dflag, cf.port_list);
+            setDisabled(dflag, cf.port_limit_thrd);
+
+        }
+
+        function set_fid_enable() {
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.fid_limit_enable) == "disable");
+
+            if (dflag) {
+                cf.vid.value = "";
+                cf.fid_limit_thrd.value = "";
+            }
+            setDisabled(dflag, cf.vid);
+            setDisabled(dflag, cf.fid_limit_thrd)
+        }
+
+        function list_add_limit_port(overwrite, mac_vlan) {
+            var cf = document.forms[0];
+            var i, tmp;
+            var mac = new Array();
+            var ports = cf.port_bits.value;
+            var port_map_array = cf.port_map.value.split(";");
+
+            mac = mac_vlan.split(":");
+
+            if (0 == overwrite)
+                tmp = "--" + (port_count + 1);
+            else
+                tmp = "--" + (overwrite);
+
+            tmp += "---------------";//index
+
+            //port
+            i = parseInt(mac[1], 10);
+            if (ports & 1 << i) {
+                tmp += port_map_array[i];
+            }
+            for (i = 0; i < 16 - mac[1].length; i++)
+                tmp += "-";
+
+            //threshold
+            tmp += mac[2];
+            tmp += "--------------------------------";
+
+
+            if (0 == overwrite) {
+                cf.port_cfg_table.options.add(new Option(tmp, mac_vlan));// port:threshold
+                port_count++;
+            }
+            else {
+                cf.port_cfg_table.options[overwrite].value = mac_vlan;
+                cf.port_cfg_table.options[overwrite].innerHTML = tmp;
+            }
+        }
+
+        function list_add_limit_fid(overwrite, mac_vlan) {
+            var cf = document.forms[0];
+            var tmp;
+            var mac = new Array();
+            mac = mac_vlan.split(":");
+
+            if (0 == overwrite)
+                tmp = "--" + (fid_count + 1);
+            else
+                tmp = "--" + (overwrite);
+
+            tmp += "---------------";//index
+
+            //vid
+            tmp += mac[1];
+            for (i = 0; i < 16 - mac[1].length; i++)
+                tmp += "-";
+
+            //threshold
+            tmp += mac[2];
+            tmp += "--------------------------------";
+
+
+            if (0 == overwrite) {
+                cf.fid_cfg_table.options.add(new Option(tmp, mac_vlan));// port:threshold
+                fid_count++;
+            }
+            else {
+                cf.fid_cfg_table.options[overwrite].value = mac_vlan;
+                cf.fid_cfg_table.options[overwrite].innerHTML = tmp;
+            }
+        }
+
+        function list_del_limit_port(Index) {
+            var cf = document.forms[0];
+
+            cf.port_cfg_table.remove(Index);
+            port_count--;
+        }
+
+        function list_del_limit_fid(Index) {
+            var cf = document.forms[0];
+
+            cf.fid_cfg_table.remove(Index);
+            fid_count--;
+        }
+
+        function set_port() {
+            var cf = document.forms[0];
+            var ports = cf.port_bits.value;
+            var g_ports = cf.g_port_bits.value;
+            var i = 1;
+            var j = 1;
+            var a = 0;
+            while (ports) {
+                if (ports & 1) {
+                    if (g_ports & 1)		//G port
+                    {
+                        cf.port_list.options.add(new Option("G" + i, a));
+                        i++;
+                    }
+                    else {
+                        cf.port_list.options.add(new Option("XG" + j, a));
+                        j++;
+                    }
+                }
+                ports >>= 1;
+                g_ports >>= 1;
+                a++;
+            }
+        }
+
+
+        function checkData() {
+            var cf = document.forms[0];
+            var i = 0;
+            var port_param = "";
+            var fid_param = "";
+
+
+            //dataToHidden(cf);
+
+
+            //global
+            if (getRadioCheckedValue(cf.global_limit_enable) == "disable") {
+                //ex_acton:ena:thrd
+                cf.lrn_limit_sys.value = "1" + ":" + "0" + ":" + "0" + ";";
+            }
+            else {
+                cf.lrn_limit_sys.value = "1" + ":" + "1" + ":" + cf.global_limit_thrd.value + ";";
+            }
+
+            cf.lrn_limit_port.value = "";
+            cf.lrn_limit_fid.value = "";
+
+            for (i = 1; i < cf.port_cfg_table.options.length; i++) {
+                cf.lrn_limit_port.value += cf.port_cfg_table.options[i].value + ";";
+            }
+
+            for (i = 1; i < cf.fid_cfg_table.options.length; i++) {
+                cf.lrn_limit_fid.value += cf.fid_cfg_table.options[i].value + ";";
+            }
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.global_limit_enable, cf.port_limit_enable, cf.fid_limit_enable);
+            setDisabled(true, cf.Save, cf.Cancel);
+
+            setDisabled(true, cf.global_limit_thrd);
+            setDisabled(true, cf.port_limit_thrd);
+            setDisabled(true, cf.fid_limit_thrd, cf.vid);
+            setDisabled(true, cf.port_list);
+        }
+
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" accept-charset=utf-8 action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP:@clinet_ip# &nbsp;VISITOR MAC:@clinet_mac#</p>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" colspan="9" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr class="table_title">
+                            <td width="400" height="25"><strong class="style4">&nbsp;&nbsp;Current Page
+                                    &gt;&gt;</strong><span class="style4"> Access Control </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> MAC Learn Limit</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1002">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+        </table>
+
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr class="table_title">
+                <td height="25" colspan="2">&nbsp;&nbsp;Global Config</td>
+            </tr>
+            <tr class="table_left">
+                <td width="150" align="left">&nbsp;&nbsp;Global Limit En</td>
+                <td colspan="5" align="left" valign="middle">&nbsp;
+                    <input type="radio" name="global_limit_enable" value="enable" autocomplete="off"
+                        onchange="set_sys_enable()">
+                    Enable
+                    &nbsp;&nbsp;&nbsp;
+                    <input type="radio" name="global_limit_enable" value="disable" autocomplete="off"
+                        onchange="set_sys_enable()" checked="checked" />
+                    Disable
+                </td>
+            </tr>
+            <tr>
+                <td width="150" height="25" class="table_left">&nbsp;&nbsp;MAC Learn Limit Threshold</td>
+                <td class="table_right">&nbsp;
+                    <input type="text" name="global_limit_thrd" class="input_txt2" maxlength="15" />(1-16000)
+                </td>
+            </tr>
+            <br>
+        </table>
+
+        <table width="1002" height="100" border="0" align="center" cellspacing="0">
+            <tr>
+                <td width="500" height="100" align="left" valign="top">
+                    <table width="500" height="100" border="0" align="center" cellspacing="0">
+                        <tr class="table_title">
+                            <td height="25" colspan="2">&nbsp;&nbsp;Based on Port</td>
+                        </tr>
+                        <tr class="table_left">
+                            <td width="150" align="left">&nbsp;&nbsp;Port Limit En</td>
+                            <td colspan="5" align="left" valign="middle">&nbsp;
+                                <input type="radio" name="port_limit_enable" value="enable" autocomplete="off"
+                                    onchange="set_port_enable()">
+                                Enable
+                                &nbsp;&nbsp;&nbsp;
+                                <input type="radio" name="port_limit_enable" value="disable" autocomplete="off"
+                                    onchange="set_port_enable()" checked="checked" />
+                                Disable
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="40" class="table_left">&nbsp;&nbsp;Port</td>
+                            <td class="table_right">&nbsp;&nbsp;
+                                <select name="port_list" class="select1">
+                                    <option value=-1>No Select</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;MAC Learn Limit Threshold </td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="port_limit_thrd" class="input_txt2" maxlength="15" />(1-16000)
+                            </td>
+                        </tr>
+                        <br>
+                    </table>
+                </td>
+                <td width="500" height="100" align="right" valign="top">
+                    <table width="500" height="100" border="0" align="center" cellspacing="0">
+                        <tr class="table_title">
+                            <td height="25" colspan="2">&nbsp;&nbsp;FID config</td>
+                        </tr>
+                        <tr class="table_left">
+                            <td width="150" align="left">&nbsp;&nbsp;Fid Enable</td>
+                            <td colspan="5" align="left" valign="middle">&nbsp;
+                                <input type="radio" name="fid_limit_enable" value="enable" autocomplete="off"
+                                    onchange="set_fid_enable()">
+                                Enable
+                                &nbsp;&nbsp;&nbsp;
+                                <input type="radio" name="fid_limit_enable" value="disable" autocomplete="off"
+                                    onchange="set_fid_enable()" checked="checked" />
+                                Disable
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="40" class="table_left">&nbsp;&nbsp;VID</td>
+                            <td class="table_right" style="text-transform:uppercase">&nbsp;
+                                <input type="text" name="vid" class="input_txt2" maxlength="4" />
+                                <a>(1-4094)</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;MAC Addr Limit Threashold</td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="fid_limit_thrd" class="input_txt2" maxlength="15" />(1-16000)
+                            </td>
+                        </tr>
+                        <br>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <br>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr height="8">
+                <td width="1002">
+                    <div style="overflow: hidden; background: #969594; height: 1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top: 5px"><span style="padding-top: 5px">
+                        <input type="button" name="Add" value="Add" onClick="return additem();" class="showbtn6">&nbsp;
+                        <input type="button" name="Delete" value="Delete" onClick="return delitem();"
+                            class="showbtn6">&nbsp;
+                        <input type="submit" name="Save" value="Save" class="showbtn7" onclick="return checkData()" />
+                        <input type="button" name="Cancel" value="Cancel"
+                            onClick="location.href='setup.cgi?next_file=learn_limit.html'" class="showbtn6"></span>
+                </td>
+            </tr>
+        </table>
+
+        <table width="1002" border="0" align="center" cellspacing="1" cellpadding="0">
+            <tr height="8">
+                <td colspan="2">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="center" valign="middle" class="td2" colspan="2">
+                <td height="25">Based on PORT</td>
+                <td height="25">Based on FID</td>
+            </tr>
+            <tr>
+                <td>
+                    <select name="port_cfg_table" size="24" id="uselect"
+                        style="width: 100%;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                        <option value="0">--SN-------------PORT-------------LIMIT_NUM--------------------------------
+                        </option>
+                    </select>
+                </td>
+                <td>
+                    <select name="fid_cfg_table" size="24" id="uselect"
+                        style="width: 100%;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                        <option value="0">--SN-------------FID-------------LIMIT_NUM---------------------------------
+                        </option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="device_mac" value="@device_mac#">
+        <input type="hidden" name="lrn_limit_sys" value="@lrn_limit_sys#">
+        <input type="hidden" name="lrn_limit_port" value="@lrn_limit_port#">
+        <input type="hidden" name="lrn_limit_fid" value="@lrn_limit_fid#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="learn_limit.html">
+        <input type="hidden" name="next_file" value="learn_limit.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="port_map" value="@port_map#">
+    </form>
+</body>
+
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>网络诊断</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+	<link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+	<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		<!-
+		var tmp_link_str = "";
+		function loadXMLDoc(url) //基于AJAX 的无刷方式请求建立XMLHttpRequest 对象
+		{
+			xmlhttp=null;
+			if (window.XMLHttpRequest)
+			{// code for IE7, Firefox, Opera, etc.
+				xmlhttp=new XMLHttpRequest();
+			}
+			else if (window.ActiveXObject)
+			{// code for IE6, IE5
+				xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			if (xmlhttp!=null)
+			{
+			xmlhttp.open("GET",url,true);
+			xmlhttp.onreadystatechange=state_Change;
+				  
+			xmlhttp.setRequestHeader("If-Modified-Since","0"); 
+			xmlhttp.send(null);
+			}
+			else
+			{
+				alert("Your browser does not support XMLHTTP.");
+			}
+		}
+		
+		function state_Change()
+		{
+			if (xmlhttp.readyState==4)
+			{// 4 = "loaded"
+				if (xmlhttp.status==200)
+				{// 200 = "OK"
+					tmp_link_str = xmlhttp.responseText;
+					//tmp_link_str =tmp_link_str.substring(tmp_link_str.indexOf('to'),32);
+				}
+				else//无法建立连接时
+				{
+					tmp_link_str ="";
+					  }
+			}
+		}
+		function showtime()
+		{
+			loadXMLDoc('/tmp/tmp_ping2file.xml');
+			
+			if(tmp_link_str!="")
+			{
+				document.getElementsByName("ping_result")[0].innerHTML = tmp_link_str
+			}
+		}			
+					
+					
+		function init()
+		{
+			var cf = document.forms[0];
+		
+			if(cf.loader.value != "admin")
+				disable_all_intput();
+			setInterval("showtime()", 1000);	
+		}
+		
+		function disable_all_intput()
+		{
+			var cf = document.forms[0];
+		
+			setDisabled(true,cf.ping_ipaddr,cf.ping_size,cf.ping_number);
+			setDisabled(true,cf.ping_interval,cf.ping_timeout,cf.ping_number,cf.diag);
+		}
+		
+		function isDomainString(s)
+		{
+			var patrn=/^[\w-]+(\.[\w-]+)+$/;
+		
+			if (!patrn.exec(s)) return false
+		
+			return true
+		
+		}
+		
+		function checkData()
+		{
+		  var cf = document.forms[0];
+		  var msg = "";
+		
+		  if( cf.todo.value == "ping_test")
+		  {
+				msg+= checkHostName(cf.ping_ipaddr, msg_ping_addr);
+				msg+= checkInt(cf.ping_size, msg_ping_size, 60, 1480, true);
+				msg+= checkInt(cf.ping_number, msg_ping_number, 1, 100, true);
+				msg+= checkInt(cf.ping_interval, msg_ping_interval, 1000, 5000, true);
+				msg+= checkInt(cf.ping_timeout, msg_ping_timeout, 1000, 5000, true);
+		
+				if(checkMsg(msg))
+				{
+					dataToHidden(cf);
+					//openDataSubWin('setup.cgi?next_file=ping.html', bigsub);
+					return true;
+				}else
+					return false;
+			}
+		}
+		//-->
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init();">
+	<form method="POST" action="setup.cgi" onSubmit="return checkData()">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+								<a href="https://milkv.io/">
+									<span class="showbtn3">网站</span>
+								</a>
+								<a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a
+									href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span
+										class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td width="274" height="25" class="table_title"><strong
+									class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+									class="style4">网络诊断</span><strong class="style4">&gt;&gt;</strong><span
+									class="style3">网络诊断</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="1002" border="0" cellspacing="1" cellpadding="0">
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;目的主机</td>
+							<td height="25" valign="middle" class="table_right">&nbsp;
+								<input type="text" class="input_user" maxlength="32" name="ping_ipaddr"
+									value="@ping_ipaddr#" />
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;报文大小</td>
+							<td height="25" valign="middle" class="table_right">&nbsp;
+								<input name="ping_size" type="text" class="input_txt" value="@ping_size#" size="4"
+									maxlength="4" />
+								&nbsp;字节(范围:60至1480)
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;报文数目</td>
+							<td height="25" valign="middle" class="table_right">&nbsp;
+								<input name="ping_number" type="text" class="input_txt" value="@ping_number#" size="4"
+									maxlength="3">
+								&nbsp;(范围:1至100)
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;报文间隔</td>
+							<td height="25" valign="middle" class="table_right">&nbsp;
+								<input name="ping_interval" type="text" class="input_txt" value="@ping_interval#"
+									size="4" maxlength="4" />
+								&nbsp;毫秒(范围:1000至5000)
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;应答超时</td>
+							<td height="25" valign="middle" class="table_right">&nbsp;
+								<input name="ping_timeout" type="text" class="input_txt" value="@ping_timeout#" size="4"
+									maxlength="4" />
+								&nbsp;毫秒(范围:1000至5000)
+							</td>
+						</tr>
+						<tr>
+							<td height="25" class="table_left">&nbsp;&nbsp;网络诊断</td>
+							<td height="25" class="table_right">&nbsp;
+								<INPUT name="diag" type="submit" class="showbtn7" id="开始" value="&nbsp;开始&nbsp;"
+									onClick="this.form.todo.value='ping_test';">
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+		</table>
+		</td>
+		</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellPadding="0" cellSpacing="0">
+			<tr>
+				<td class="table_left"><br>
+					<hr size="1" noshade color="#ffffff">
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr>
+				<td width="150" rowspan="4" align="right" valign="top" nowrap bgcolor="#efefef"><br>
+					<table width="100%" height="19" border="0" cellpadding="0" cellspacing="0" bgcolor="#656565">
+						<tr>
+							<td align="center" valign="middle" class="td2">&nbsp;Ping&nbsp;测试结果&nbsp;</td>
+						</tr>
+					</table>
+				</TD>
+			</TR>
+			<tr>
+				<td width="535" colspan="2" align="left" valign="top">
+					<table width="99%" border="0" align="center" cellpadding="3" cellspacing="2">
+						<tr>
+							<td height="6"></td>
+						</tr>
+						<tr>
+							<td height="346"><textarea name="ping_result" class="input_ping" cols="95" rows="20"
+									wrap="off" readonly>@ping_output#</textarea></td>
+						</tr>
+					</table>
+				</TD>
+			</TR>
+		</table>
+		<table width="1002" height="25" border="0" align="center" cellpadding="2" cellspacing="0">
+			<tr>
+				<td align="center" valign="middle" bgcolor="#dbdee4" class="td2">
+					<script language="JavaScript">document.write(msg_copyright);</script>
+				</td>
+			</tr>
+		</table>
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="diag.html">
+		<input type="hidden" name="next_file" value="diag.html">
+		<input type="hidden" name="message" value="@msg_text#">
+		<input type="hidden" name="switch_type" value="@switch_type#">
+	</form>
+</body>
+
+</html>

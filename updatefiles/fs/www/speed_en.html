@@ -1,0 +1,708 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>Port Config</title>
+	<style type="text/css">
+		.aa {
+			color: #CCCCCC
+		}
+	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="javascript">
+
+		var arrName = new Array();
+
+		var tmp_speed_str = "";
+		function loadXMLDoc(url) //基于AJAX 的无刷方式请求建立XMLHttpRequest 对象
+		{
+			xmlhttp = null;
+			if (window.XMLHttpRequest) {
+				xmlhttp = new XMLHttpRequest();
+			}
+			else if (window.ActiveXObject) {// code for IE6, IE5
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			if (xmlhttp != null) {
+				xmlhttp.open("GET", url, true);
+
+				xmlhttp.onreadystatechange = speed_Change;
+				xmlhttp.setRequestHeader("If-Modified-Since", "0");
+				xmlhttp.send(null);
+
+			}
+			else {
+				alert("Your browser does not support XMLHTTP.");
+			}
+		}
+
+		function speed_Change() {
+			if (xmlhttp.readyState == 4) {// 4 = "loaded"
+				if (xmlhttp.status == 200) {// 200 = "OK"
+					tmp_speed_str = xmlhttp.responseText;
+					//tmp_speed_str =tmp_speed_str.substring(tmp_speed_str.indexOf('to'),32);
+				}
+				else//无法建立连接时
+				{
+					tmp_speed_str = "";
+				}
+			}
+		}
+
+		function show_port_speed() {
+			var i = 0;
+			var sum = 0;
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+
+			while (ports) {
+				if (ports & 1)
+					sum++;
+				ports >>= 1;
+			}
+			loadXMLDoc('/tmp/tmp_speed.xml');
+			if (tmp_speed_str != "") {
+				for (; i < sum; i++) {
+					if (tmp_speed_str.substring(i, i + 1) == '1') {
+						if (tmp_speed_str.substring(2 * i + sum, 2 * i + sum + 2) == '00') {
+							if (tmp_speed_str.substring(i + sum * 3, i + sum * 3 + 1) == '1')
+								document.getElementsByName(arrName[4])[i].innerHTML = "10M-Full";
+							else
+								document.getElementsByName(arrName[4])[i].innerHTML = "10M-Half";
+						}
+						else if (tmp_speed_str.substring(2 * i + sum, 2 * i + sum + 2) == '01') {
+							if (tmp_speed_str.substring(i + sum * 3, i + sum * 3 + 1) == '1') {
+								document.getElementsByName(arrName[4])[i].innerHTML = "100M-Full";
+							}
+							else {
+								document.getElementsByName(arrName[4])[i].innerHTML = "100M-Half";
+							}
+						}
+						else if (tmp_speed_str.substring(2 * i + sum, 2 * i + sum + 2) == '10') {
+							if (tmp_speed_str.substring(i + sum * 3, i + sum * 3 + 1) == '1') {
+								document.getElementsByName(arrName[4])[i].innerHTML = "1000M-Full";
+							}
+							else {
+								document.getElementsByName(arrName[4])[i].innerHTML = "1000M-Half";
+							}
+						}
+						else if (tmp_speed_str.substring(2 * i + sum, 2 * i + sum + 2) == '11') {
+							if (tmp_speed_str.substring(i + sum * 3, i + sum * 3 + 1) == '1') {
+								document.getElementsByName(arrName[4])[i].innerHTML = "10G-Full";
+							}
+							else {
+								document.getElementsByName(arrName[4])[i].innerHTML = "10G-Half";
+							}
+						}
+					}
+					else {
+						document.getElementsByName(arrName[4])[i].innerHTML = "-";
+					}
+				}
+			}
+		}
+
+		function init() {
+			var cf = document.forms[0];
+			var t = 0, i = 0, j = 0;
+			var port_stat = cf.port_status.value.split(";");
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var fPorts = cf.f_port_bits.value;
+			var arrText = new Array(), arrValue = new Array();
+			var objTb = document.getElementById("portlist");
+			var arrType = new Array(), arrClassName = new Array(), arrInputType = new Array(), arrWide = new Array();
+
+			show_language_flag();
+			for (t = 0; t < 8; t++) {
+				if (t == 0 || t == 4 || t == 7) {
+					arrType[t] = "a";
+					arrClassName[t] = "";
+					arrInputType[t] = "";
+
+					if (t == 4) {
+						arrName[t] = "realTimeSpeed"
+						arrWide[t] = "11.25%";
+					}
+					else if (t == 7) {
+						arrName[t] = "autoChange";
+						arrWide[t] = "11.25%";
+					} else if (t == 0) {
+						arrName[t] = "media";
+						arrWide[t] = "11.25%";
+					}
+				}
+				else if (t == 1 || t == 2) {
+					arrType[t] = "select";
+					arrClassName[t] = "select";
+					arrInputType[t] = "";
+					if (t == 1) {
+						arrName[t] = "speed";
+						arrWide[t] = "11.25%";
+					}
+					else {
+						arrName[t] = "duplex";
+						arrWide[t] = "11.25%";
+					}
+				}
+				else {
+					arrType[t] = "input";
+					arrClassName[t] = "";
+					if (t == 3) {
+						arrName[t] = "enable";
+						arrWide[t] = "11.25%";
+						arrInputType[t] = "checkbox";
+					}
+					else if (t == 5) {
+						arrName[t] = "flow";
+						arrWide[t] = "11.25%";
+						arrInputType[t] = "checkbox";
+					} else if (t == 6) {
+						arrName[t] = "mtu";
+						arrClassName[t] = "input_txt";
+						arrWide[t] = "11.25%";
+						arrInputType[t] = "";
+					}
+
+				}
+			}
+			comCreateTableElementById(1, ports, gPorts, objTb, arrType, arrName, arrClassName, arrWide, arrInputType);
+
+
+			i = 0;
+			ports = cf.port_bits.value;
+			while (ports) {
+				if (ports & 1)
+
+					switch (parseInt(cf.port_type.value.substring(i, i + 1))) {
+						case 2:
+							arrText[i] = "Copper";
+							break;
+
+						case 3:
+						case 4:
+						case 5:
+							arrText[i] = "Fiber";
+							break;
+
+
+
+						default:
+							break;
+					}
+
+				i++;
+				ports >>= 1;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 5, undefined, undefined, undefined, undefined, arrText);
+
+			arrText = arrText.slice(0, 4);
+			for (t = 0; t < arrText.length; t++) {
+				switch (t) {
+					case 0:
+						arrText[t] = "Auto-negotiation";
+						break;
+					case 1:
+						arrText[t] = "--10 M--";
+						break;
+					case 2:
+						arrText[t] = "--100M--";
+						break;
+					case 3:
+						arrText[t] = "--1000M--";
+						break;
+					case 4:
+						arrText[t] = "--10G--";
+						break;
+						break;
+				}
+				arrValue[t] = t;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[1]), 0, document.getElementsByName(arrName[1]).length - 1, 2, undefined, "set_port_enable()", undefined, arrValue, arrText);
+			arrText = arrText.slice(0, 2);
+			arrValue = arrValue.slice(0, 2);
+			for (t = 0; t < arrText.length; t++) {
+				if (t == 0)
+					arrText[t] = "Full-duplex";
+				else
+					arrText[t] = "Half-duplex";
+				arrValue[t] = t;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[2]), 0, document.getElementsByName(arrName[2]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+			comCreateTdElementById(document.getElementsByName(arrName[3]), 0, document.getElementsByName(arrName[3]).length - 1, 1, undefined, undefined, "set_port_enable()");
+			i = 0;
+			ports = cf.port_bits.value;
+			while (ports) {
+				if (ports & 1)
+					arrText[i++] = "-";
+
+				ports >>= 1;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[4]), 0, document.getElementsByName(arrName[4]).length - 1, 5, undefined, undefined, undefined, undefined, arrText);
+			comCreateTdElementById(document.getElementsByName(arrName[5]), 0, document.getElementsByName(arrName[5]).length - 1, 1, "checkbox");
+			for (i = 0; i < document.getElementsByName(arrName[6]).length; i++) {
+				arrText[i] = "<span class=\"aa\">Auto-crossover</span>";
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[7]), 0, document.getElementsByName(arrName[6]).length - 1, 5, undefined, undefined, undefined, undefined, arrText);
+			i = 0;
+			t = 0;
+			ports = cf.port_bits.value;
+			while (ports) {
+				if (ports & 1) {
+					cf.speed[i].value = port_stat[t].substring(0, 1);
+					cf.duplex[i].value = port_stat[t].substring(1, 2);
+
+					if (port_stat[t].substring(2, 3) == "1")
+						cf.enable[i].checked = true;
+					else
+						cf.enable[i].checked = false;
+
+					if (port_stat[t].substring(3, 4) == "1")
+						cf.flow[i].checked = true;
+					else
+						cf.flow[i].checked = false;
+					cf.mtu[i].value = cf.port_mtu.value.split(";")[i];
+
+					if (cf.port_type.value.substring(i, i + 1) == "2") {
+						cf.speed[i].remove(4);
+						cf.speed[i].remove(3);
+					}
+					else if (cf.port_type.value.substring(i, i + 1) == "3") {
+						cf.speed[i].remove(4);
+						cf.speed[i].remove(3);
+						cf.speed[i].remove(2);
+						cf.speed[i].remove(1);
+					}
+					else if (cf.port_type.value.substring(i, i + 1) == "4") {
+						cf.speed[i].remove(4);
+						cf.speed[i].remove(3);
+						cf.speed[i].remove(2);
+						cf.speed[i].remove(1);
+					}
+					if (cf.link_status.value.substring(t, t + 1) == '1') {
+						if (cf.port_speed.value.substring(2 * t, 2 * t + 2) == '00') {
+							if (cf.port_duplex.value.substring(t, t + 1) == '1')
+								document.getElementsByName(arrName[4])[i].innerHTML = "10M-Full";
+							else
+								document.getElementsByName(arrName[4])[i].innerHTML = "10M-Half";
+						}
+						else if (cf.port_speed.value.substring(2 * t, 2 * t + 2) == '01') {
+							if (cf.port_duplex.value.substring(t, t + 1) == '1') {
+								document.getElementsByName(arrName[4])[i].innerHTML = "100M-Full";
+							}
+							else {
+								document.getElementsByName(arrName[4])[i].innerHTML = "100M-Half";
+							}
+						}
+						else if (cf.port_speed.value.substring(2 * t, 2 * t + 2) == '10') {
+							if (cf.port_duplex.value.substring(t, t + 1) == '1') {
+								document.getElementsByName(arrName[4])[i].innerHTML = "1000M-Full";
+							}
+							else {
+								document.getElementsByName(arrName[4])[i].innerHTML = "1000M-Half";
+							}
+						}
+						else if (cf.port_speed.value.substring(2 * t, 2 * t + 2) == '11') {
+							if (cf.port_duplex.value.substring(t, t + 1) == '1') {
+								document.getElementsByName(arrName[4])[i].innerHTML = "10G-Full";
+							}
+							else {
+								document.getElementsByName(arrName[4])[i].innerHTML = "10G-Half";
+							}
+						}
+					}
+					if (fPorts & 1)
+						document.getElementsByName(arrName[0])[i].innerHTML = "F-E Multiplex";
+					i++;
+				}
+				ports >>= 1;
+				fPorts >>= 1;
+				t++;
+			}
+
+			dataToVisible(cf);
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+			else
+				set_port_enable();
+			setInterval("show_port_speed()", 1000);
+		}
+
+		function set_port_enable() {
+			var i, t;
+
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+
+			t = 0; i = 0;
+			while (ports) {
+				if ((ports & 1) == 0) {
+					ports >>= 1;
+					i++;
+					continue;
+				}
+
+				if (cf.enable[t].checked == true) {
+
+					if (cf.port_type.value.substring(i, i + 1) == 3)
+						setDisabled(true, cf.duplex[t]);
+					else {
+						if (cf.speed[t].value == "0") {
+							cf.duplex[t].options[0].selected = true;
+							setDisabled(true, cf.duplex[t]);
+						}
+						else {
+							if (cf.switch_port.value == "28") {
+								if (cf.speed[t].value == "1") {
+									cf.duplex[t].options[0].selected = true;
+									setDisabled(true, cf.duplex[t]);
+								}
+								else
+									setDisabled(false, cf.duplex[t]);
+							}
+							else
+								setDisabled(false, cf.duplex[t]);
+						}
+					}
+					setDisabled(false, cf.speed[t], cf.flow[t], cf.mtu[t]);
+				}
+				else
+					setDisabled(true, cf.speed[t], cf.duplex[t], cf.flow[t], cf.mtu[t]);
+
+				ports >>= 1;
+				i++;
+				t++;
+			}
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			var i;
+
+			setDisabled(true, cf.Save, cf.Cancel);
+			setDisabled(true, cf.Refresh);
+			for (i = 0; i < cf.speed.length; i++)
+				setDisabled(true, cf.speed[i], cf.duplex[i], cf.enable[i], cf.flow[i]);
+
+		}
+
+
+		function checkData() {
+			var cf = document.forms[0];
+			var port_stats = "", port_change = "", enable_port = "";
+			var port_mtu = "";
+			var msg = "";
+			var port_stat = cf.port_status.value.split(";");
+			var i, j, t, index, num, sum;
+			var flag = 0, nDisablePorts = 0;
+			var arry_tmp = new Array(8);
+			var m, n, r;
+			var speed_mode, duplex_mode;
+			var port_map_array = cf.port_map.value.split(";");
+
+			i = 0;
+			j = 0;
+			m = 0;
+			n = 0;
+			r = 0;
+			for (t = 0; t < port_stat.length - 1; t++) {
+				if ((cf.port_bits.value & (1 << t)) == 0) {
+					port_stats += "0010;";
+					enable_port += "0";
+					continue;
+				}
+				port_stats += cf.speed[i].value;
+				port_stats += cf.duplex[i].value;
+				port_stats += (cf.enable[i].checked == true) ? "1" : "0";
+				enable_port += (cf.enable[i].checked == true) ? "1" : "0";
+				port_stats += (cf.flow[i].checked == true) ? "1" : "0";
+
+				port_stats += ";";
+				msg += checkInt(cf.mtu[i], ("port" + (i + 1) + "mtu"), 64, 16000, true)
+				port_mtu += cf.mtu[i].value + ";";
+				if (cf.enable[i].checked == false)
+					nDisablePorts |= 1 << t;
+				i++;
+			}
+
+			if (cf.h_trunk_enable.value == 'enable') {
+				var arrTrunk_lock = cf.trunk_setting.value.split(';');
+				var arrItem_lock;
+				var arrport_stats = port_stats.split(';');
+
+				for (r = 0; r < arrTrunk_lock.length - 1; r++) {
+
+					arrItem_lock = arrTrunk_lock[r].split(':');
+					if (arrItem_lock[1] == '1') {
+						index = 0;
+						num = 0;
+						sum = 0;
+						arry_tmp = [0, 0, 0, 0, 0, 0, 0, 0];
+						sum = parseInt(arrItem_lock[0]);
+						while (sum) {
+							if ((sum & 1) == 0) {
+								sum >>= 1;
+								index++;
+								continue;
+							}
+
+							arry_tmp[num] = arrport_stats[index];
+							sum >>= 1;
+							num++;
+							index++;
+						}
+						for (n = 0; n < num; n++) {
+							for (m = n + 1; m < num; m++) {
+								if (arry_tmp[n] != arry_tmp[m]) {
+									msg += msg_speed_edit_trunk;
+									flag = 1;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			//check for giga port for half duplex
+			for (t = 0; t < cf.speed.length; t++) {
+				speed_mode = cf.speed[t].value;
+				duplex_mode = cf.duplex[t].value;
+
+				if (speed_mode == '3' && duplex_mode == '1') {
+					alert("1000M/Half-Duplex configuration is failed!");
+					return checkMsg(msg);
+				}
+			}
+			if (nDisablePorts) {
+				if (cf.ring.value == 'enable')//ring is enable
+				{
+					var arrRingConfig = cf.ring_config.value.split(";");
+					var arrItem;
+
+					for (i = 0; i < arrRingConfig.length - 1; i++) {
+						arrItem = arrRingConfig[i].split(':');
+						if (arrItem[2] == '1')//one of rows is enable
+						{
+							if (nDisablePorts & parseInt(arrItem[1])) {
+								msg += msg_speed_disable_ring;
+								flag = 1;
+								break;
+							}
+						}
+					}
+				}
+				if (cf.h_vlan_type.value == 'qvlan' && cf.vlan_q_type.value == '2') {
+					var arrVtrunk = cf.vlan_trunk.value.split(":");
+
+					if (nDisablePorts & parseInt(arrVtrunk[0])) {
+						msg += msg_speed_disable_vlantrunk;
+						flag = 1;
+					}
+					if (nDisablePorts & parseInt(cf.vlan_manage_port.value)) {
+						msg += msg_speed_disable_vlantrunk_manager;
+						flag = 1;
+					}
+				}
+				if (cf.h_trunk_enable.value == 'enable') {
+					var arrTrunk = cf.trunk_setting.value.split(';');
+					var arrItem;
+
+					for (i = 0; i < arrTrunk.length - 1; i++) {
+						arrItem = arrTrunk[i].split(':');
+						if (arrItem[1] == '1') {
+							if (nDisablePorts & parseInt(arrItem[0])) {
+								msg += msg_speed_disable_trunk;
+								flag = 1;
+								break;
+							}
+						}
+					}
+				}
+				if (cf.mirror_enable.value == 'enable') {
+					if (nDisablePorts & parseInt(cf.mirror_ports.value)) {
+						msg += msg_speed_disable_mirror_capture;
+						flag = 1;
+					}
+					if ((nDisablePorts >> parseInt(cf.mirror_capture.value)) & 1) {
+						msg += msg_speed_disable_mirror;
+						flag = 1;
+					}
+				}
+
+				if (cf.h_lacp_enable.value == '1') {
+					var port_lacp = cf.lacp_port_cfg.value.split(";");
+					for (j = 0; j < port_lacp.length; j++) {
+						var port_lacp_set = port_lacp[j].split(":");
+						if ((nDisablePorts & (1 << j)) && (port_lacp_set[2] == '1')) {
+							msg += addstr(msg_speed_disable_lacp, port_map_array[j]);
+							flag = 1;
+						}
+					}
+				}
+
+				if (flag)
+					msg += msg_speed_disable_tail;
+			}
+
+			var new_port_stat = port_stats.split(";");
+
+			for (i = 0; i < new_port_stat.length - 1; i++)
+				if (port_stat[i] != new_port_stat[i])
+					port_change += i + ":" + new_port_stat[i] + ";";
+
+			cf.port_status.value = port_stats;
+			cf.port_change.value = port_change;
+			cf.port_mtu.value = port_mtu;
+
+			if (enable_port.indexOf('1') == -1)
+				msg += msg_speed_warning;
+
+			dataToHidden(cf);
+			return checkMsg(msg);
+		}
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current Page
+									&gt;&gt;</strong><span class="style4"> Port Config </span><strong
+									class="style4">&gt;&gt;</strong><span class="style3"> Port Config </span></td>
+						</tr>
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">Port ID </td>
+							<td width="11.25%" height="25" align="center" valign="middle">Interface Type </td>
+							<td width="11.25%" height="25" align="center" valign="middle">Speed Mode </td>
+							<td width="11.25%" height="25" align="center" valign="middle">Duplex Mode</td>
+							<td width="11.25%" height="25" align="center" valign="middle">Port Enabled </td>
+							<td width="11.25%" height="25" align="center" valign="middle">Port status </td>
+							<td width="11.25%" height="25" align="center" valign="middle">Flow Control </td>
+							<td width="11.25%" height="25" align="center" valign="middle">mtu (64~16000)</td>
+							<td width="11.25%" height="25" align="center" valign="middle">MDI/MDIX</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table id="portlist" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="Submit" name="Save" value="Submit" onClick="return checkData();"
+							class="showbtn6">&nbsp;
+						<input type="button" name="Refresh" value="Refresh" class="showbtn6"
+							onClick="location.href='setup.cgi?next_file=speed_en.html'">&nbsp;
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=speed_en.html'" class="showbtn6">
+					</span>
+				</td>
+			</tr>
+		</table>
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="link_status" value="@link_status#">
+		<input type="hidden" name="port_speed" value="@port_speed#">
+		<input type="hidden" name="port_duplex" value="@port_duplex#">
+		<input type="hidden" name="port_status" value="@port_status#">
+		<input type="hidden" name="port_change" value="@port_change#">
+		<input type="hidden" name="port_type" value="@port_type#">
+		<input type="hidden" name="port_mtu" value="@port_mtu#">
+		<input type="hidden" name="port_map" value="@port_map#">
+
+		<input type="hidden" name="this_file" value="speed_en.html">
+		<input type="hidden" name="next_file" value="speed_en.html">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="f_port_bits" value="@f_port_bits#">
+
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+
+
+		<input type="hidden" name="ring" value="@ring#">
+		<input type="hidden" name="ring_config" value="@ring_config#">
+
+		<input type="hidden" name="mirror_enable" value="@mirror_enable#">
+		<input name="mirror_ports" value="@mirror_ports#" type="hidden">
+
+		<input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+		<input type="hidden" name="trunk_setting" value="@trunk_setting#">
+		<input type="hidden" name="h_vlan_type" value="@h_vlan_type#">
+		<input type="hidden" name="vlan_q_type" value="@vlan_q_type#">
+		<input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+		<input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+	</form>
+</body>
+
+</html>

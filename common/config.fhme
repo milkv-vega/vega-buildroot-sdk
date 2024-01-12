@@ -1,0 +1,57 @@
+# $Copyright: (c) 2021 fsl Corporation All Rights Reserved.$
+init_sw_by_hand=1
+switch_mode=17
+hubmode_16_4_0=0
+phy_8108=0
+#port map yes or not
+port_remap=1
+rgmii_enable=0
+#cpu_port_enable and cpu_port is only to inner cpu, it determines whether use a given port as cpu's net port
+#cpu_port_enable:1 means use cpu port, 0 means don't use cpu port
+cpu_port_enable=0
+#cpu_port:the port as the cpu's net port
+cpu_port=0
+led_mode=1
+led_fq=30
+board_type=0
+linkscan_enable=0
+#linkscan interval
+fsl_linkscan_interval=1000000
+#read counter by dma
+counter_dma=1
+#whether to start counter thread
+counter_enable=0
+#ext_intf, set the interface to access switch registers.
+#for inner cpu:  1(by localbus direct access),2(mdio),3(i2c)
+#for extern cpu: 1(spi),2(mdio),3(i2c)
+ext_intf=1
+#the attributer of ext_intf. 
+#    For mdio or i2c, it's addr. 
+#    For spi,it's spi mode(0,1,2,3).
+#    For localbus, it means nothing.
+addr=0
+#the port need to be used
+pbmp_valid=0
+#the phy base addr on 1030M chip
+#xg0
+phy_addr0=1
+#xg1
+phy_addr1=0xc
+ierpsNum=0
+eerpsNum=0
+#phy port map logical port id for mode17 15 13
+#phy_port=logical_port_id(0~13)
+xg0=1
+xg1=0
+ge0=4
+ge1=5
+ge2=2
+ge3=3
+ephy0=6
+ephy1=7
+ephy2=8
+ephy3=9
+ephy4=10
+ephy5=11
+ephy6=12
+ephy7=13

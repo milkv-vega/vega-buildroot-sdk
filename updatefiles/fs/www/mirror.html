@@ -1,0 +1,426 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>端口镜像</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        var trunk_port_maps = 0;
+        var lacp_port_maps = 0;
+        function init() {
+            var cf = document.forms[0];
+            var i = 0, b = 0;
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var objTb1 = document.getElementById("portlist1");
+            var objTb2 = document.getElementById("portlist2");
+            var objTb3 = document.getElementById("portlist3");
+            comCreateElement(ports, gPorts, objTb1, "checkbox", "mirror_port", undefined, "from_port", "from_port", "margin-bottom:2px", 1);
+            comCreateElement(ports, gPorts, objTb2, "radio", "capture_port", undefined, "", "", "margin-bottom:2px", 0);
+            CreateMirrorType(objTb3);
+            create_lag_mirror_port(objTb1);
+
+            dataToVisible(cf);
+
+
+            while (ports) {
+                if (ports & 1) {
+                    if (cf.mirror_ports.value.split(";")[0] & (1 << i))
+                        cf.mirror_port[b].checked = true;
+                    b++;
+                }
+                i++;
+                ports >>= 1;
+            }
+
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+            else
+                set_mirror();
+
+        }
+
+        function set_mirror() {
+            var i;
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.mirror_enable) == "disable");
+
+            for (i = 0; i < cf.capture_port.length; i++)
+                setDisabled(dflag, cf.capture_port[i], cf.mirror_port[i]);
+
+            for (i = 0; i < cf.mirror_lag_checkbox.length; i++)
+                setDisabled(dflag, cf.mirror_lag_checkbox[i]);
+
+            setDisabled(dflag, cf.mirror_capture_type[0], cf.mirror_capture_type[1], cf.mirror_capture_type[2]);
+
+            setDisabled(dflag, cf.check_all);
+
+            if (!dflag)
+                set_mirror_lag();
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+            var i;
+
+            setDisabled(true, cf.mirror_enable[0], cf.mirror_enable[1]);
+            setDisabled(true, cf.Save, cf.Cancel);
+
+
+            setDisabled(true, cf.mirror_capture_type[0], cf.mirror_capture_type[1], cf.mirror_capture_type[2]);
+
+
+            for (i = 0; i < cf.capture_port.length; i++)
+                setDisabled(true, cf.mirror_port[i], cf.capture_port[i]);
+
+            for (i = 0; i < cf.mirror_lag_checkbox.length; i++)
+                setDisabled(true, cf.mirror_lag_checkbox[i]);
+
+            setDisabled(true, cf.check_all);
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "", port_maps = 0, b = 0, i = 0;
+            var ports = cf.port_bits.value;
+            var arrPortState = cf.port_status.value.split(";");
+            var lag_maps = 0;
+            var port_map_array = cf.port_map.value.split(";");
+
+            while (ports) {
+                if (ports & 1) {
+                    if (cf.mirror_port[b++].checked == true)
+                        port_maps += 1 << i;
+                }
+                ports >>= 1;
+                i++;
+            }
+
+            for (i = 0; i < cf.mirror_lag_checkbox.length; i++)
+                if (cf.mirror_lag_checkbox[i].checked == true && cf.mirror_lag_checkbox[i].parentNode.style.display != "none")
+                    lag_maps |= (1 << i);
+
+            dataToHidden(cf);
+            if (getRadioCheckedValue(cf.mirror_enable) == "enable") {
+                for (i = 0; i < arrPortState.length - 1; i++) {
+                    if (arrPortState[i].substring(2, 3) == "0")//port is disable
+                    {
+                        if ((port_maps >> i) & 1) {
+                            msg += msg_mirror_port_disabled;
+                            break;
+                        }
+                        if (parseInt(cf.h_capture_port.value) == i) {
+                            msg += msg_capture_port_disabled;
+                            break;
+                        }
+                    }
+                }
+
+                if (port_maps == 0 && lag_maps == 0)
+                    msg += mirror_msg;
+
+                if ((port_maps & ~(trunk_port_maps | lacp_port_maps)) & (1 << cf.h_capture_port.value))
+                    msg += mirror_repeat;
+
+                if (trunk_port_maps & (1 << cf.h_capture_port.value))
+                    msg += addstr(msg_capture_port_trunk, port_map_array[parseInt(cf.h_capture_port.value)])
+
+                if (lacp_port_maps & (1 << cf.h_capture_port.value))
+                    msg += addstr(msg_capture_port_lacp, port_map_array[parseInt(cf.h_capture_port.value)])
+            }
+
+            if (!msg) {
+                cf.mirror_ports.value = port_maps + ";" + lag_maps + ";";
+            }
+            return checkMsg(msg);
+        }
+
+        function checkAllPorts() {
+            var cf = document.forms[0];
+            var i = 0;
+
+            if (cf.check_all.value == "全选") {
+                cf.check_all.value = "取消全选";
+                for (i = 0; i < cf.mirror_port.length; i++)
+                    if (cf.mirror_port[i].disabled == false)
+                        cf.mirror_port[i].checked = true;
+
+                for (i = 0; i < cf.mirror_lag_checkbox.length; i++)
+                    if (cf.mirror_lag_checkbox[i].parentNode.style.display != "none")
+                        cf.mirror_lag_checkbox[i].checked = true;
+            } else {
+                cf.check_all.value = "全选";
+                for (i = 0; i < cf.mirror_port.length; i++)
+                    if (cf.mirror_port[i].disabled == false)
+                        cf.mirror_port[i].checked = false;
+
+                for (i = 0; i < cf.mirror_lag_checkbox.length; i++)
+                    if (cf.mirror_lag_checkbox[i].parentNode.style.display != "none")
+                        cf.mirror_lag_checkbox[i].checked = false;
+            }
+        }
+
+        function create_lag_mirror_port(objTb) {
+            var cf = document.forms[0];
+            var lag_num = cf.trunk_setting.value.split(";").length - 1;
+            var strInput = "";
+            var i = 0;
+            var tr_cell = parseInt(cf.switch_port.value) % 15;
+            var objTmp;
+            var strPort;
+
+            var lag_show = get_mirror_lag_show();
+            objTr = objTb.childNodes[1].childNodes[objTb.childNodes[1].rows.length - 1];
+
+            for (i = 0; i < lag_num; i++) {
+                if (objTr.cells.length > 20) {
+                    objTr = objTb.insertRow(objTb.childNodes[1].rows.length);
+                    objTr.insertCell(0).innerHTML = "&nbsp;&nbsp;";
+                    tr_cell = 0;
+                }
+
+                strPort = "LAG" + (i + 1);
+
+                objTd = objTr.insertCell(tr_cell * 2 + 1);
+                objTd.innerHTML = "<div align='center' name='mirror_lag_name'>" + strPort + "</div>";
+                objTd.width = "15";
+                if (!lag_show[i])
+                    objTd.style.display = "none";
+
+                objTd = objTr.insertCell(tr_cell * 2 + 2);
+                strInput = "<input type='checkbox' name='mirror_lag_checkbox' ";
+                strInput += ("value='" + i + "' ");
+                strInput += " style=margin-bottom:2px >";
+                objTd.innerHTML = strInput;
+                if (!lag_show[i])
+                    objTd.style.display = "none";
+                tr_cell++;
+
+            }
+        }
+
+        function get_mirror_lag_show() {
+            var cf = document.forms[0];
+            var arr_mirror_lag = new Array();
+            var vlan_lag_str = cf.vlan_lag_port_set.value.split(";");
+
+            for (var i = 0; i < vlan_lag_str.length - 1; i++)
+                if (vlan_lag_str[i].split(":")[4] != 0)
+                    arr_mirror_lag[parseInt(vlan_lag_str[i].split(":")[4]) - 1] = 1;
+
+            return arr_mirror_lag;
+        }
+
+        function set_mirror_lag() {
+            var cf = document.forms[0];
+            var arr_lacp_str = cf.lacp_port_cfg.value.split(";");
+            var arr_trunk_str = cf.trunk_setting.value.split(";");
+            var arr_mirror_lag_group = cf.mirror_ports.value.split(";")[1];
+
+            if (cf.h_trunk_enable.value == "enable")
+                for (i = 0; i < arr_trunk_str.length - 1; i++) {
+                    if (arr_trunk_str[i].split(":")[1] == "1")
+                        trunk_port_maps |= arr_trunk_str[i].split(":")[0];
+                }
+
+            if (cf.h_lacp_enable.value == "1")
+                for (i = 0; i < arr_lacp_str.length - 1; i++)
+                    if (arr_lacp_str[i].split(":")[2] == "1")
+                        lacp_port_maps |= (1 << i);
+
+            for (i = 0; i < cf.switch_port.value; i++) {
+                if ((trunk_port_maps | lacp_port_maps) & (1 << i)) {
+                    cf.mirror_port[i].disabled = true;
+                    //cf.mirror_port[i].checked = false
+                }
+            }
+
+            for (i = 0; i < cf.mirror_lag_checkbox.length; i++) {
+                if (cf.mirror_lag_checkbox[i].parentNode.style.display != "none" && (1 << i) & arr_mirror_lag_group)
+                    cf.mirror_lag_checkbox[i].checked = true;
+            }
+        }
+
+        function CreateMirrorType(objTb) {
+            var cf = document.forms[0];
+            var objTr1 = objTb.insertRow(0);
+            var objTd1 = objTr1.insertCell(0);
+            var strInput = "&nbsp;&nbsp;";
+
+            strInput += "<input type='radio' name='mirror_capture_type' autocomplete='off' value='0' />";
+            strInput += "&nbsp;";
+            strInput += "全部数据";
+            strInput += "&nbsp;&nbsp;";
+
+            strInput += "<input type='radio' name='mirror_capture_type' autocomplete='off' value='1' />";
+            strInput += "&nbsp;";
+            strInput += "进口数据";
+            strInput += "&nbsp;&nbsp;";
+
+            strInput += "<input type='radio' name='mirror_capture_type' autocomplete='off' value='2' />";
+            strInput += "&nbsp;";
+            strInput += "出口数据";
+
+            objTd1.innerHTML = strInput;
+        }
+
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span
+                                        class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">网络诊断</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">端口镜像</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" border="0" align="center" cellpadding="0" cellspacing="1">
+                        <tr align="left" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;端口镜像</td>
+                            <td height="25" colspan="9" align="left" valign="middle">&nbsp;
+                                <input type="radio" name="mirror_enable" value="enable" autocomplete="off"
+                                    onClick="set_mirror()">
+                                启用
+                                &nbsp;&nbsp;&nbsp;
+                                <input type="radio" name="mirror_enable" value="disable" autocomplete="off"
+                                    onClick="set_mirror()">
+                                禁用
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1" cellpadding="0">
+                        <tr>
+                            <td width="150" height="50" valign="middle" bgcolor="#34AED1" class="table_left">
+                                &nbsp;&nbsp;被镜像端口</td>
+                            <td class="table_right">
+                                <table border="0" cellspacing="0" id="portlist1">
+
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="50" valign="middle" bgcolor="#34AED1" class="table_left">
+                                &nbsp;&nbsp;镜像端口</td>
+                            <td class="table_right">
+                                <table border="0" cellspacing="0" id="portlist2">
+
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" valign="middle" bgcolor="#34AED1" class="table_left">
+                                &nbsp;&nbsp;端口镜像模式</td>
+                            <td class="table_right">
+                                <table border="0" cellspacing="0" id="portlist3">
+
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="配置" onClick="return checkData();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="取消"
+                            onClick="location.href='setup.cgi?next_file=mirror.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input name="h_mirror_enable" value="@h_mirror_enable#" type="hidden">
+        <input name="mirror_ports" value="@mirror_ports#" type="hidden">
+        <input name="h_capture_port" value="@h_capture_port#" type="hidden">
+        <input name="h_mirror_capture_type" value="@h_mirror_capture_type#" type="hidden">
+        <input name="loader" value="@loader#" type="hidden">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="mirror.html">
+        <input type="hidden" name="next_file" value="mirror.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="port_status" value="@port_status#">
+        <input type="hidden" name="rd_code" value="@rd_code#">
+        <input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+        <input type="hidden" name="vlan_lag_port_set" value="@vlan_lag_port_set#">
+        <input type="hidden" name="trunk_setting" value="@trunk_setting#">
+        <input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+        <input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+        <input type="hidden" name="port_map" value="@port_map#">
+
+    </form>
+</body>
+
+</html>

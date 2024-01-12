@@ -1,0 +1,1439 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>ERPS</title>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+<link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+		<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+		<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+		<script language="JavaScript" type="text/javascript" src="js/func.js"></script> 
+		<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+<script language="JavaScript" type="text/javascript">
+
+var g_ring_count = 4;
+var g_elems = [
+    ["erps_enable", "ring_id", "ring_type", "protocol_vlan",
+     "revertive", "def_mac", "belong_major", "virtual_channel","erps_id","data_vlan"],
+    ["east_port", "west_port", "node_type", "rpl_direction"],
+    ["wtr", "guard", "hold_off"]
+];
+
+function switch_command()
+{
+    var cf = document.forms[0];
+    cf.erps_switch.value = cf.s_ringid.value + ":" + cf.s_switch.value + ";";
+    cf.todo.value = "erps_switch";
+}
+
+function parse_erps_info(row, col)
+{
+    var str = [
+        ["0"], ["N/A", "主环", "子环"],
+        ["init", "idle", "protection", "MS", "FS", "pending"],
+        ["Normal", "Owner", "Neighbor"], ["0"], ["0"], ["0"], ["0"], ["0"], ["0"],
+        ["不回切", "回切"], ["启用", "禁用"], ["0"], ["0"], ["0"]
+    ];
+
+    if (row >= 1 && row <= 3 || row === 10 || row === 11) {
+        return str[row][parseInt(col)];
+    }
+    if (row === 8 || row === 9) {
+        if (col.indexOf("N/A") !== -1)
+            return "N/A";
+        else
+            return col;
+    } else {
+        return col;
+    }
+}
+
+function xmlhttp_handle(info_str)
+{
+//    info_str = "250:1:0:1:1:0:2:3:1:0:1:500:0;251:2:0:1:2:0:11:5:1:0:1:500:0;" +
+//        "252:2:0:2:3:0:6:7:1:0:1:500:0;253:2:0:0:4:0:9:10:1:0:1:500:0;";
+
+    var table = document.getElementById("erps_info");
+    var rows = table.rows.length;
+    while(rows > 3)
+    {
+        table.deleteRow(3);
+        rows--;
+    }
+
+    if (info_str === "") {
+        return;
+    }
+    var info = info_str.split(";");
+    for (var i = 0; i < info.length - 1; i++) {
+        var tmp = info[i].split(":");
+        var tr = table.insertRow(rows + i);     //need to specify location in chrome27
+        for (var j = 0; j < tmp.length; j++) {
+            if (j === 7 && tmp[1] === "1") //display belong major of major ring
+                tr.insertCell(j).innerHTML = parse_erps_info(j, "N/A");
+            else
+                tr.insertCell(j).innerHTML = parse_erps_info(j, tmp[j]);
+        }
+        tr.align = "center";
+        if (i % 2 === 0) {
+            tr.className = "table_right";
+        } else {
+            tr.className = "table_black";
+        }
+    }
+}
+
+function get_erps_info(url)
+{
+    //发起异步GET请求
+    //1 创建XHR
+    var xmlhttp = null;
+
+    if (window.XMLHttpRequest)
+    {// code for IE7, Firefox, Opera, etc.
+        xmlhttp = new XMLHttpRequest();
+    }
+    else if (window.ActiveXObject)
+    {// code for IE6, IE5
+        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+
+    if (xmlhttp !== null)
+    {
+        //2 监听状态改变，监听响应接收完成后读取响应主体
+        xmlhttp.onreadystatechange = function(){
+            //readyState: 0 -> 1 -> 2 -> 3 -> 4
+            //console.log('XHR的状态改变了：'+xhr.readyState);
+            if(xmlhttp.readyState===4){ //响应接收完成
+                if(xmlhttp.status===200){
+                    xmlhttp_handle(xmlhttp.responseText);  //处理响应消息
+                }else {
+                    info_str = "";
+//                    alert("get erps info failed");
+                }
+            }
+        };
+
+        //3 打开连接
+        xmlhttp.open("GET", url, true);
+        xmlhttp.setRequestHeader("If-Modified-Since","0");
+        //4 发送请求
+        xmlhttp.send(null);
+    }
+    else
+    {
+        alert("Your browser does not support XMLHTTP.");
+    }
+
+}
+
+function update_info()
+{
+    var cf = document.forms[0];
+    cf.todo.value = "erps_info";
+}
+
+function get_config()
+{
+    var cf = document.forms[0];
+
+//    cf.erps_ring_config.value =
+//        "1:250:1:1:1:1:0:1;1:251:2:1:1:1:0:1;" +
+//        "0:252:2:1:1:1:0:1;1:253:2:1:1:1:0:1;";
+//    cf.erps_node_config.value =
+//        "1:2:0:0;4:8:0:0;16:32:0:0;256:512:0:0;";
+//    cf.erps_timer_config.value =
+//        "1:500:0;1:500:0;1:500:0;1:500:0;";
+//    cf.erps_switch.value =
+//        "251:1;";
+//    cf.h_erps_enable.value = "disable";
+
+    var ring_config = cf.erps_ring_config.value.split(";");
+    var node_config = cf.erps_node_config.value.split(";");
+    var timer_config = cf.erps_timer_config.value.split(";");
+    var erps_switch = cf.erps_switch.value.split(":");
+
+    //get erps table config
+    for(var i = 0; i < g_ring_count; i++)
+    {
+        //parse ring config
+        var rconfig = ring_config[i].split(":");
+        for(var j = 0; j < g_elems[0].length; j++)
+        {
+            //parse erps enable checked value
+            if(j === 0)
+            {
+                if(rconfig[j] === "1")
+                {
+                    eval("cf." + g_elems[0][j] + (i + 1))[0].checked = true;
+                }
+                else
+                {
+                    eval("cf." + g_elems[0][j] + (i + 1))[1].checked = true;
+                }
+            }
+            else
+            {
+                eval("cf." + g_elems[0][j] + (i + 1)).value = rconfig[j];
+            }
+
+            //add select option to ringID of switch command which has be enabled
+            if(j === 1 && rconfig[0] === "1")
+            {
+                cf.s_ringid.add(new Option(rconfig[j], rconfig[j]));
+            }
+        }
+
+        //parse node config
+        var nconfig = node_config[i].split(":");
+        for(j = 0; j < g_elems[1].length; j++)
+        {
+            eval("cf." + g_elems[1][j] + (i + 1)).value = nconfig[j];
+        }
+
+        //parse timer config
+        var tconfig = timer_config[i].split(":");
+        for(j = 0; j < g_elems[2].length; j++)
+        {
+            eval("cf." + g_elems[2][j] + (i + 1)).value = tconfig[j];
+        }
+
+        if(getRadioCheckedValue(eval("cf.erps_enable" + (i + 1))) === "1")
+        {
+            if(eval("cf.ring_type" + (i + 1)).value === "1")
+                erps_type_change(i + 1);
+            if(eval("cf.node_type" + (i + 1)).value === "0")
+                erps_node_change(i + 1);
+        }
+    }
+
+    //get erps switch command
+    cf.s_ringid.value = erps_switch[0];
+    cf.s_switch.value = erps_switch[1].replace(";", "");
+
+    dataToVisible(cf);
+}
+
+function is_major_exist(ring_id)
+{
+    var cf = document.forms[0];
+    for(var i = 1; i < g_ring_count + 1; i++) {
+        if (getRadioCheckedValue(eval("cf.erps_enable" + i)) === "1" &&
+            eval("cf.ring_type" + i).value === "1" &&
+            ring_id === eval("cf.ring_id" + i).value)
+            return true;
+    }
+    return false;
+}
+
+function check_config()
+{
+    var cf = document.forms[0];
+    var msg = "";
+    var err_flag = 0;
+    // cf.port_status.value = "0010;0000;0010;0000;0010;0010;0010" +
+    //     ";0010;0010;000;0000;";
+    var port_sta = cf.port_status.value.split(";");
+    var port_map_array = cf.port_map.value.split(";");
+    var disabled_portmap = 0;
+	var vlan_map = new Array();
+	var other_vlan_map = new Array();
+	var other_port_map = new Array();
+	var protocol_vlan = 0;
+	var manage_vlan = parseInt(cf.h_manage_vlan.value);
+	var enable_ring_count = 0;	
+	var enable_ring_num = 0;	
+	
+    if(getRadioCheckedValue(cf.erps_enable) === "disable")
+        return msg;
+
+    if(getRadioCheckedValue(cf.erps_enable) === "enable" &&
+        getRadioCheckedValue(cf.erps_enable1) === "0" &&
+        getRadioCheckedValue(cf.erps_enable2) === "0" &&
+        getRadioCheckedValue(cf.erps_enable3) === "0" &&
+        getRadioCheckedValue(cf.erps_enable4) === "0")
+        return msg += msg_erps_enable;
+
+    for(i = 0; i < port_sta.length - 1; i++)
+    {
+        if( port_sta[i].substring(2, 3) === "0" )//port is disable
+            disabled_portmap |= 1 << i;
+    }
+	
+    for(var i = 1; i < g_ring_count + 1; i++)
+    {
+		 if (getRadioCheckedValue(eval("cf.erps_enable" + i)) === "1")	
+		 {
+			enable_ring_num++;
+		 }
+		 
+    }
+
+    for(var i = 1; i < g_ring_count + 1; i++)
+    {
+        if(err_flag)
+            break;
+
+        var east_port = eval("cf.east_port" + i).value;
+        var west_port = eval("cf.west_port" + i).value;
+        var port_map = parseInt(east_port) | parseInt(west_port);
+        var ring_type = eval("cf.ring_type" + i).value;
+        var def_mac = eval("cf.def_mac" + i).value;
+		var data_vlan =  eval("cf.data_vlan" + i);
+        if (getRadioCheckedValue(eval("cf.erps_enable" + i)) === "1")
+        {
+            //text input check
+            msg += checkInt(eval("cf.ring_id" + i), "环网组" + i + "的环ID", 1, 255, true);
+            msg += checkInt(eval("cf.protocol_vlan" + i), "环网组" + i + "的协议VLAN", 1, 4094, true);
+            msg += checkInt(eval("cf.belong_major" + i), "环网组" + i + "的所属主环", 1, 255, true);
+            msg += checkInt(eval("cf.wtr" + i), "环网组" + i + "的WTR定时器", 1, 12, true);
+            msg += checkInt(eval("cf.guard" + i), "环网组" + i + "的Guard定时器", 10, 2000, true);
+            msg += checkInt(eval("cf.hold_off" + i), "环网组" + i + "的HoldOff定时器", 0, 10000, true);
+            msg += checkInt(eval("cf.erps_id" + i), "环网组" + i + "ERPS ID", 1, 15, true);
+			
+            if (msg !== "")
+                break;
+			
+			if(data_vlan.value == "" || check_vlan_range(data_vlan) == false)
+				msg += msg_ring_vlan_err;	
+			
+			vlan_map = get_vlan_map(data_vlan);	
+			
+			if(vlan_map[parseInt(manage_vlan)] == 0)
+			{
+				enable_ring_count++;
+				
+				if(enable_ring_count == enable_ring_num)
+				{
+                    msg += msg_data_vlan_error;
+                    err_flag = 1;
+				}	                
+			}            
+
+			if(ring_type === "2" && eval("cf.ring_id" + i).value === eval("cf.belong_major" + i).value)
+            msg += addstr(msg_sub_belong_error, i);
+
+            if (port_map & disabled_portmap)    //disabled port check
+                msg += addstr(msg_erps_port_disabled, i);
+
+            //port is used in trunk
+            if(cf.h_trunk_enable.value == "enable")
+            {
+                var trunkArray = cf.trunk_setting.value.split(';');
+                for(var k = 0; k < trunkArray.length; k++)
+                {
+                    elem = trunkArray[k].split(':');
+                    if(elem[1] == '1' && (port_map & parseInt(elem[0])))//trunk enable
+                        msg += addstr(msg_erps_port_trunk, i);
+                }
+            }
+
+			//storm detect is running
+			if(cf.h_storm_detect_enable.value == 'enable')
+            {
+            	var port_policy = cf.storm_detect_port_policy.value.split(";");
+				for(j = 0; j < port_policy.length; j++)
+				{
+					var port_param = port_policy[j].split(":");
+					if(port_param[0] == "1" || port_param[2] == "1")
+					{
+						if(port_map & (1 << j))
+						{
+							msg += addstr(msg_erps_disable_storm, i);
+							break;
+						}
+					}
+				
+				}                          
+			}
+
+			if(cf.h_rstp_enable.value == 'enable')
+			{
+				msg += msg_erps_disable_rstp;
+			}
+
+			if(cf.h_lacp_enable.value == '1')
+			{
+				var port_lacp = cf.lacp_port_cfg.value.split(";");
+				for(j = 0; j < port_lacp.length; j++)
+				{
+					var port_lacp_set = port_lacp[j].split(":");
+					if((port_lacp_set[2] == '1') && (port_map & (1 << j)))
+					{
+						msg +=  addstr(msg_erps_disable_lacp, i,port_map_array[j]);
+					}
+				}
+			}
+			
+            if (((east_port === "0" && west_port !== "0") || (west_port === "0" && east_port !== "0")) && ring_type === "2")//interconnection node check
+                if (!is_major_exist(eval("cf.belong_major" + i).value))
+                    msg += addstr(msg_belong_major, i);
+
+            if (east_port === "0" && west_port === "0")// both ports are none
+                msg += addstr(msg_erps_port, i);
+
+            if (east_port === west_port && east_port !== "0")   //ports of one ring duplicate check
+                msg += addstr(msg_erps_port_duplicate, i);
+
+            if (ring_type === "1" && (east_port === "0" || west_port === "0"))  //major node port check
+                msg += addstr(msg_erps_major_port, i);
+			
+			protocol_vlan =  parseInt(eval("cf.protocol_vlan" + i).value);
+			
+			/*if(vlan_map[parseInt(protocol_vlan/32)] & (1<<(protocol_vlan%32)))
+			{
+                msg += addstr(msg_erps_vlan, i,i);
+			}*/
+            if (msg !== "")
+                break;
+
+            for (var j = i + 1; j < g_ring_count + 1; j++)  //duplicate check
+            {
+                if (getRadioCheckedValue(eval("cf.erps_enable" + j)) == "0")
+                    continue;
+
+                if (def_mac !== eval("cf.def_mac" + j).value)    //def_mac check
+                {
+                    msg += msg_erps_def_mac;
+                    err_flag = 1;
+                }
+
+                if (parseInt(eval("cf.ring_id" + i).value) ===
+                    parseInt(eval("cf.ring_id" + j).value))   //check ringID
+                {
+                    msg += addstr(msg_erps_duplicate, i, j);
+                    err_flag = 1;
+                }
+
+                if (parseInt(eval("cf.protocol_vlan" + i).value) ==
+                    parseInt(eval("cf.protocol_vlan" + j).value))   //check protocol vlan
+                {
+                    msg += addstr(msg_erps_vlan_duplicate, i, j);
+                    err_flag = 1;
+                }
+					
+                /*if (parseInt(eval("cf.erps_id" + i).value) ===
+                    parseInt(eval("cf.erps_id" + j).value))   //check erps_id
+                {
+                    msg += addstr(msg_erps_id_duplicate, i, j);
+                    err_flag = 1;
+                }*/
+					
+				other_vlan_map = get_vlan_map(eval("cf.data_vlan" + j));
+                other_port_map = parseInt(eval("cf.east_port" + j).value) |
+                    parseInt(eval("cf.west_port" + j).value);			
+
+				for(var k = 0; k < vlan_map.length; k++)
+				{
+					if(vlan_map[k] & other_vlan_map[k])
+					{
+						if (parseInt(eval("cf.erps_id" + i).value) !=
+	                    parseInt(eval("cf.erps_id" + j).value))  		 //check erps_id
+		                {
+		                    msg += addstr(msg_erps_id_error, i, j);
+		                    err_flag = 1;
+							break;
+		                }
+					}
+					else
+					{
+						if (parseInt(eval("cf.erps_id" + i).value) == parseInt(eval("cf.erps_id" + j).value))
+						{
+			                if ((east_port !== "0" || west_port !== "0") &&
+			                    (port_map & other_port_map)) //check port between rings
+			                {
+			                    msg += addstr(msg_diff_erps_port_duplicate, i, j);
+			                    err_flag = 1;
+								break;
+			                }
+						}
+							
+					}
+				}
+				
+				
+				/*if(other_vlan_map[parseInt(protocol_vlan/32)] & (1<<(protocol_vlan%32)))
+				{
+	                msg += addstr(msg_erps_vlan, i, j);
+				}
+				*/
+            }
+        }
+    }
+
+    return msg;
+}
+
+function set_config()
+{
+    var cf = document.forms[0];
+    var ring_config = "";
+    var node_config = "";
+    var timer_config = "";
+
+    for(var i = 0; i < g_ring_count; i++)
+    {
+        //set ring config
+        for(var j = 0; j < g_elems[0].length; j++)
+        {
+            if(j === 0) //ring enable
+                ring_config += getRadioCheckedValue(eval("cf." + g_elems[0][j] + (i + 1))) + ":";
+            else
+                ring_config += eval("cf." + g_elems[0][j] + (i + 1)).value + ":";
+        }
+        ring_config = ring_config.replace(/:$/, ';');
+
+        //set node config
+        for(j = 0; j < g_elems[1].length; j++)
+            node_config += eval("cf." + g_elems[1][j] + (i + 1)).value + ":";
+        node_config = node_config.replace(/:$/, ';');
+
+        //set timer config
+        for(j = 0; j < g_elems[2].length; j++)
+            timer_config += eval("cf." + g_elems[2][j] + (i + 1)).value + ":";
+        timer_config = timer_config.replace(/:$/, ';');
+    }
+
+    cf.erps_ring_config.value = ring_config;
+    cf.erps_node_config.value = node_config;
+    cf.erps_timer_config.value = timer_config;
+    dataToHidden(cf);
+}
+
+function erps_type_change(index) {
+    var cf = document.forms[0];
+
+    if(eval("cf.ring_type" + index).value === "2") //sub ring
+    {
+        eval("cf.belong_major" + index).value = "";
+        eval("cf.belong_major" + index).disabled = false;
+    }else
+    {
+        eval("cf.belong_major" + index).value = "1";
+        eval("cf.belong_major" + index).disabled = true;
+    }
+}
+
+function erps_node_change(index) {
+    var cf = document.forms[0];
+    eval("cf.rpl_direction" + index).disabled = eval("cf.node_type" + index).value === "0";
+}
+
+function set_erps_enable()
+{
+    var cf = document.forms[0];
+    var dflag = (getRadioCheckedValue(cf.erps_enable) === "disable");
+
+    setDisabled(dflag, cf.s_ringid,cf.s_switch, cf.command, cf.update);
+    for(var i = 1; i < g_ring_count + 1; i++)
+    {
+        setDisabled(dflag, eval("cf.erps_enable" + i + "[0]"), eval("cf.erps_enable" + i + "[1]"));
+        set_enable(i);
+    }
+}
+
+function set_enable(index) {
+    var cf = document.forms[0];
+    var dflag;
+    var dflag1 = (getRadioCheckedValue(cf.erps_enable) === "enable");
+    var dflag2 = (getRadioCheckedValue(eval("cf.erps_enable" + index)) === "1");
+
+    dflag = !(dflag1 && dflag2);
+
+    if(!dflag && eval("cf.ring_type" + index).value === "1")
+        setDisabled(true, eval("cf.belong_major" + index));
+    else
+        setDisabled(dflag, eval("cf.belong_major" + index));
+
+    if(!dflag && eval("cf.node_type" + index).value === "0")
+        setDisabled(true, eval("cf.rpl_direction" + index));
+    else
+        setDisabled(dflag, eval("cf.rpl_direction" + index));
+
+    setDisabled(dflag, eval("cf.ring_id" + index));
+    setDisabled(dflag, eval("cf.ring_type" + index));
+    setDisabled(dflag, eval("cf.protocol_vlan" + index));
+    setDisabled(dflag, eval("cf.revertive" + index));
+    setDisabled(dflag, eval("cf.def_mac" + index));
+    setDisabled(dflag, eval("cf.virtual_channel" + index));
+	setDisabled(dflag, eval("cf.erps_id" + index));
+    setDisabled(dflag, eval("cf.data_vlan" + index));
+    setDisabled(dflag, eval("cf.east_port" + index));
+    setDisabled(dflag, eval("cf.west_port" + index));
+    setDisabled(dflag, eval("cf.node_type" + index));
+    setDisabled(dflag, eval("cf.wtr" + index));
+    setDisabled(dflag, eval("cf.guard" + index));
+    setDisabled(dflag, eval("cf.hold_off" + index));
+}
+
+function disable_all_intput()
+{
+    var cf = document.forms[0];
+    setDisabled(true, cf.s_ringid,cf.s_switch, cf.command, cf.update);
+    setDisabled(true, cf.erps_enable[0], cf.erps_enable[1],cf.Save, cf.Cancel);
+    for(var i = 1; i < g_ring_count + 1; i++)
+    {
+        setDisabled(true, eval("cf.erps_enable" + i + "[0]"), eval("cf.erps_enable" + i + "[1]"));
+        set_enable(i);
+    }
+}
+
+function init()
+{
+    var cf = document.forms[0];
+    var ports = cf.port_bits.value;
+    var gports = cf.g_port_bits.value;
+//     ports = 1023;
+//     gports = 768;
+    var a = 0, b = 0, c = 0;
+
+    for(var i = 1; i < g_ring_count + 1; i++)
+    {
+        obj1 = document.getElementsByName("east_port" + i);
+        obj2 = document.getElementsByName("west_port" + i);
+        obj1[0].options.add(new Option("none", 0));
+        obj2[0].options.add(new Option("none", 0));
+    }
+
+    while(ports)
+    {
+        if(ports & 1)
+        {
+            if(gports & 1)
+                port = "G" + (++a);
+            else
+                port = "XG" + (++b);
+            for(i = 1; i < g_ring_count + 1; i++)
+            {
+                obj1 = document.getElementsByName("east_port" + i);
+                obj2 = document.getElementsByName("west_port" + i);
+                obj1[0].options.add(new Option(port, 1 << c));
+                obj2[0].options.add(new Option(port, 1 << c));
+            }
+        }
+
+        ports >>= 1;
+        gports >>= 1;
+        c++;
+    }
+
+    get_config();
+    get_erps_info('tmp/tmp_erps.xml');
+
+    if(cf.loader.value !== "admin")
+        disable_all_intput();
+    else
+        set_erps_enable();
+}
+
+function check_vlan_range(obj)
+{
+	var cf = document.forms[0];
+	var str = obj.value;
+	var rule = /([1-9][0-9]*\,)*([1-9][0-9]*\-[1-9][0-9]*\,)*/;
+	var tmp_array = new Array(), tmp_str = new Array();
+	var i = 0, j = 0, num = 0;
+	
+	if(str.length == 0)
+	{
+		return false;
+	}
+	
+	if(!str.match(rule))
+		return false;
+					
+	if(isNaN(str))
+	{
+		if((str.substring(0, 1) == ",") || (str.substring(str.length - 1, str.length) == ","))
+			return false;
+		if((str.substring(0, 1) == "-") || (str.substring(str.length - 1, str.length) == "-"))
+			return false;
+
+		tmp_array = str.split(",");
+		for(i = 0; i < tmp_array.length; i++)
+		{
+			if(isNaN(tmp_array[i]))
+			{
+				tmp_str = tmp_array[i].split("-");
+				if(tmp_str.length != 2)
+					return false;
+					
+				if(isInteger(tmp_str[0], 1, 4094, false) == false)
+					return false;
+				if(isInteger(tmp_str[1], 1, 4094, false) == false)
+					return false;
+					
+				if(parseInt(tmp_str[0]) > parseInt(tmp_str[1]))
+					return false;
+			}
+			else
+			{
+				if(isInteger(tmp_array[i], 1, 4094, false) == false)
+					return false;
+			}
+		}
+		
+	}
+	else
+	{
+			if(isInteger(str, 1, 4094, false) == false)
+				return false;
+	}
+	
+	return true;
+}
+
+
+function get_vlan_map(obj)
+{
+	var cf = document.forms[0];
+	var str = obj.value;
+	var tmp_array = new Array(), tmp_str = new Array(), tmp_vlan_map = new Array(4096).fill(0);
+	var min = "", max = ""
+	var i = 0 ,j = 0;
+	var q = 0 , rem = 0;
+	
+	
+	if(isNaN(str))
+	{
+		tmp_array = str.split(",");
+		
+		for(i = 0; i < tmp_array.length; i++)
+		{ 
+			if(isNaN(tmp_array[i]))
+			{
+				tmp_str = tmp_array[i].split("-");
+
+				min = parseInt(tmp_str[0],10);
+				max = parseInt(tmp_str[1],10);
+
+				for(j=min; j<=max;j++)
+				{
+					tmp_vlan_map[j] = 1;
+
+				}
+			}
+			else
+			{
+				tmp_vlan_map[parseInt(tmp_array,10)] = 1;
+			}
+		}
+		
+	}
+	else
+	{
+		tmp_vlan_map[parseInt(str,10)] = 1;
+	}
+	
+	return tmp_vlan_map;
+}
+
+function checkData()
+{
+    set_config();
+
+    return checkMsg(check_config());
+}
+
+</script>
+
+</head>
+<body style="margin:0" onLoad="init()">
+<form method="POST" action="setup.cgi">
+<table width="1002"  border="0" align="center" cellspacing="0">
+				<tr>
+					<td>
+                        <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+							<tr>
+                                <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							</tr>
+							<tr>
+                                <td id="logo" width="432"  height="67" align="left" valign="top" bgcolor="#FFFFFF" style="background-image:url(./images/logo.png);background-repeat:no-repeat"></td>
+                                <td width="570" height="67" align="right" valign="middle"  bgcolor="#FFFFFF">
+                                    <a
+									href="https://milkv.io/">
+									<span class="showbtn3">网站</span>
+								</a>
+                                    <a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                  <br>
+                                  <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#
+                              </span></td>
+							</tr>
+							<tr>
+                                <td height="7" colspan="2" align="left"  bgcolor="#FFFFFF"></td>
+							</tr>
+                           	<tr>
+                                <td colspan="2">
+							    <table width="1002" >
+								 <script language="JavaScript1.2">init_menu();</script>  
+								</table>
+                                </td>
+							</tr>
+							<tr>
+                                <td height="7" colspan="2" align="left"  bgcolor="#FFFFFF"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+  </table>
+
+<table width="1002"  border="0" align="center" cellspacing="0">
+  <tr>
+    <td height="25" align="left" valign="middle">
+	<table width="1002"  border="0" cellspacing="0">
+      <tr>
+	  	<td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span class="style4">链路备份</span><strong class="style4">&gt;&gt;</strong><span class="style3">ERPS</span></td>
+
+      </tr>
+    </table></td>
+  </tr>
+</table>
+
+<!-- erps ring config table -->
+<table width="1002" border="0" align="center" cellspacing="1" id="erps_table">
+    <tr align="left" valign="top" class="table_enable">
+        <td height="25" valign="middle">&nbsp;&nbsp;ERPS使能</td>
+        <td height="25" colspan="5" align="left" valign="middle" >&nbsp;
+            <input type="radio" name="erps_enable" value="enable" autocomplete="off" onClick="set_erps_enable()" >
+            启用
+            &nbsp;&nbsp;&nbsp;
+            <input type="radio" name="erps_enable" value="disable" autocomplete="off" onClick="set_erps_enable()" >
+            禁用
+        </td>
+    </tr>
+    <tr>
+        <td width="1001" colspan="6"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+    </tr>
+
+    <tr align="left" valign="top" class="table_enable">
+        <td height="25" valign="middle">&nbsp;&nbsp;环网组1</td>
+        <td height="25" colspan="5" align="left" valign="middle">&nbsp;
+            <input type="radio" name="erps_enable1" value="1" autocomplete="off" onclick="set_enable(1)">
+            启用
+            &nbsp;&nbsp;&nbsp;
+            <input type="radio" name="erps_enable1" value="0" autocomplete="off" onclick="set_enable(1)">
+            禁用
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">环ID</td>
+        <td align="left" height="25" width="15%">
+            <input name="ring_id1" type="text" style="width:50px" maxlength="3">
+            &nbsp;(1~255)
+        </td>
+
+        <td height="25" width="15%">环类型</td>
+        <td align="left" height="25" width="15%">
+            <select name="ring_type1" class="select1" onchange="erps_type_change(1)">
+                <option value="1">主环</option>
+                <option value="2">子环</option>
+            </select>
+        </td>
+
+        <td height="25" width="20%">节点类型</td>
+        <td align="left" height="25" width="20%">
+            <select name="node_type1" class="select1" onchange="erps_node_change(1)">
+                <option value="0">Normal</option>
+                <option value="1">Owner</option>
+                <option value="2">Neighbor</option>
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">协议VLAN</td>
+        <td align="left" height="25" width="15%">
+            <input name="protocol_vlan1" type="text" style="width:50px" maxlength="4">
+            &nbsp;(1~4094)
+        </td>
+
+        <td height="25" width="15%">东向端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="east_port1" class="select1">
+            </select>
+        </td>
+
+        <td height="25" width="20%">西向端口</td>
+        <td align="left" height="25" width="20%">
+            <select name="west_port1" class="select1">
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">RPL端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="rpl_direction1" class="select1">
+                <option value="0">东向端口</option>
+                <option value="1">西向端口</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">所属主环</td>
+        <td align="left" height="25" width="15%">
+            <input name="belong_major1" type="text" style="width:50px" maxlength="3">
+        </td>
+
+        <td height="25" width="15%">回切模式</td>
+        <td align="left" height="25" width="20%">
+            <select name="revertive1" class="select1">
+                <option value="0">不回切</option>
+                <option value="1">回切</option>
+            </select>
+        </td>
+
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">WTR定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="wtr1" type="text" style="width:50px" maxlength="2">
+            &nbsp;(1~12分钟)
+        </td>
+
+        <td height="25" width="15%">Guard定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="guard1" type="text" style="width:50px" maxlength="4">
+            &nbsp;(10~2000毫秒)
+        </td>
+
+        <td height="25" width="20%">HoldOff定时器</td>
+        <td align="left" height="25" width="20%">
+            <input name="hold_off1" type="text" style="width:50px" maxlength="5">
+            &nbsp;(0~10000毫秒)
+        </td>
+	</tr>
+	    <tr align="center" class="table_right">
+	    <td height="25" width="15%">ERPS ID</td>
+	    <td align="left" height="25" width="15%">
+	        <input name="erps_id1" type="text" style="width:50px" maxlength="3">
+	        &nbsp;(1~15)
+	    </td>
+
+	    <td height="25" width="15%">数据VLAN</td>
+	    <td align="left" height="25" colspan="5" width="15%">
+	        <input name="data_vlan1" type="text" style="width:50px" maxlength="64">
+	        &nbsp;(VLAN范围:1~4094，VLAN之间用&quot;,&quot;分隔，&quot;-&quot;表示VLAN ID范围，如1,2,3-6)
+	    </td>
+
+	</tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%" style="display:none">子环虚拟通道</td>
+        <td align="left" height="25" width="15%" style="display:none">
+            <select name="virtual_channel1" class="select1">
+                <option value="0">启用</option>
+                <option value="1">禁用</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">协议报文目的MAC地址</td>
+        <td align="left" height="25" colspan="5" width="15%">
+            <select name="def_mac1" class="select_erps">
+                <option value="1">01-19-A7-00-00-01</option>
+                <option value="0">01-19-A7-00-00-[Ring ID]</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr align="left" valign="top" class="table_enable">
+        <td height="25" valign="middle">&nbsp;环网组2</td>
+        <td height="25" colspan="5" align="left" valign="middle">&nbsp;
+            <input type="radio" name="erps_enable2" value="1" autocomplete="off" onclick="set_enable(2)">
+            启用
+            &nbsp;&nbsp;&nbsp;
+            <input type="radio" name="erps_enable2" value="0" autocomplete="off" onclick="set_enable(2)">
+            禁用
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">环ID</td>
+        <td align="left" height="25" width="15%">
+            <input name="ring_id2" type="text" style="width:50px" maxlength="3">
+            &nbsp;(1~255)
+        </td>
+
+        <td height="25" width="15%">环类型</td>
+        <td align="left" height="25" width="15%">
+            <select name="ring_type2" class="select1" onchange="erps_type_change(2)">
+                <option value="1">主环</option>
+                <option value="2">子环</option>
+            </select>
+        </td>
+
+        <td height="25" width="20%">节点类型</td>
+        <td align="left" height="25" width="20%">
+            <select name="node_type2" class="select1" onchange="erps_node_change(2)">
+                <option value="0">Normal</option>
+                <option value="1">Owner</option>
+                <option value="2">Neighbor</option>
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">协议VLAN</td>
+        <td align="left" height="25" width="15%">
+            <input name="protocol_vlan2" type="text" style="width:50px" maxlength="4">
+            &nbsp;(1~4094)
+        </td>
+
+        <td height="25" width="15%">东向端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="east_port2" class="select1">
+            </select>
+        </td>
+
+        <td height="25" width="20%">西向端口</td>
+        <td align="left" height="25" width="20%">
+            <select name="west_port2" class="select1">
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">RPL端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="rpl_direction2" class="select1">
+                <option value="0">东向端口</option>
+                <option value="1">西向端口</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">所属主环</td>
+        <td align="left" height="25" width="15%">
+            <input name="belong_major2" type="text" style="width:50px" maxlength="3">
+        </td>
+
+        <td height="25" width="15%">回切模式</td>
+        <td align="left" height="25" width="20%">
+            <select name="revertive2" class="select1">
+                <option value="0">不回切</option>
+                <option value="1">回切</option>
+            </select>
+        </td>
+
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">WTR定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="wtr2" type="text" style="width:50px" maxlength="2">
+            &nbsp;(1~12分钟)
+        </td>
+
+        <td height="25" width="15%">Guard定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="guard2" type="text" style="width:50px" maxlength="4">
+            &nbsp;(10~2000毫秒)
+        </td>
+
+        <td height="25" width="20%">HoldOff定时器</td>
+        <td align="left" height="25" width="20%">
+            <input name="hold_off2" type="text" style="width:50px" maxlength="5">
+            &nbsp;(0~10000毫秒)
+        </td>
+    </tr>
+	</tr>
+	    <tr align="center" class="table_right">
+	    <td height="25" width="15%">ERPS ID</td>
+	    <td align="left" height="25" width="15%">
+	        <input name="erps_id2" type="text" style="width:50px" maxlength="3">
+	        &nbsp;(1~15)
+	    </td>
+
+	    <td height="25" width="15%">数据VLAN</td>
+	    <td align="left" height="25" colspan="5" width="15%">
+	        <input name="data_vlan2" type="text" style="width:50px" maxlength="64">
+	        &nbsp;(VLAN范围:1~4094，VLAN之间用&quot;,&quot;分隔，&quot;-&quot;表示VLAN ID范围，如1,2,3-6)
+	    </td>
+
+	</tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%" style="display:none">子环虚拟通道</td>
+        <td align="left" height="25" width="15%" style="display:none">
+            <select name="virtual_channel2" class="select1">
+                <option value="0">启用</option>
+                <option value="1">禁用</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">协议报文目的MAC地址</td>
+        <td align="left" height="25" colspan="5" width="15%">
+            <select name="def_mac2" class="select_erps">
+                <option value="1">01-19-A7-00-00-01</option>
+                <option value="0">01-19-A7-00-00-[Ring ID]</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr align="left" valign="top" class="table_enable">
+        <td height="25" valign="middle">&nbsp;环网组3</td>
+        <td height="25" colspan="5" align="left" valign="middle">&nbsp;
+            <input type="radio" name="erps_enable3" value="1" autocomplete="off" onclick="set_enable(3)">
+            启用
+            &nbsp;&nbsp;&nbsp;
+            <input type="radio" name="erps_enable3" value="0" autocomplete="off" onclick="set_enable(3)">
+            禁用
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">环ID</td>
+        <td align="left" height="25" width="15%">
+            <input name="ring_id3" type="text" style="width:50px" maxlength="3">
+            &nbsp;(1~255)
+        </td>
+
+        <td height="25" width="15%">环类型</td>
+        <td align="left" height="25" width="15%">
+            <select name="ring_type3" class="select1" onchange="erps_type_change(3)">
+                <option value="1">主环</option>
+                <option value="2">子环</option>
+            </select>
+        </td>
+
+        <td height="25" width="20%">节点类型</td>
+        <td align="left" height="25" width="20%">
+            <select name="node_type3" class="select1" onchange="erps_node_change(3)">
+                <option value="0">Normal</option>
+                <option value="1">Owner</option>
+                <option value="2">Neighbor</option>
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">协议VLAN</td>
+        <td align="left" height="25" width="15%">
+            <input name="protocol_vlan3" type="text" style="width:50px" maxlength="4">
+            &nbsp;(1~4094)
+        </td>
+
+        <td height="25" width="15%">东向端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="east_port3" class="select1">
+            </select>
+        </td>
+
+        <td height="25" width="20%">西向端口</td>
+        <td align="left" height="25" width="20%">
+            <select name="west_port3" class="select1">
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">RPL端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="rpl_direction3" class="select1">
+                <option value="0">东向端口</option>
+                <option value="1">西向端口</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">所属主环</td>
+        <td align="left" height="25" width="15%">
+            <input name="belong_major3" type="text" style="width:50px" maxlength="3">
+        </td>
+
+        <td height="25" width="15%">回切模式</td>
+        <td align="left" height="25" width="20%">
+            <select name="revertive3" class="select1">
+                <option value="0">不回切</option>
+                <option value="1">回切</option>
+            </select>
+        </td>
+
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">WTR定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="wtr3" type="text" style="width:50px" maxlength="2">
+            &nbsp;(1~12分钟)
+        </td>
+
+        <td height="25" width="15%">Guard定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="guard3" type="text" style="width:50px" maxlength="4">
+            &nbsp;(10~2000毫秒)
+        </td>
+
+        <td height="25" width="20%">HoldOff定时器</td>
+        <td align="left" height="25" width="20%">
+            <input name="hold_off3" type="text" style="width:50px" maxlength="5">
+            &nbsp;(0~10000毫秒)
+        </td>
+    </tr>
+	</tr>
+	    <tr align="center" class="table_right">
+	    <td height="25" width="15%">ERPS ID</td>
+	    <td align="left" height="25" width="15%">
+	        <input name="erps_id3" type="text" style="width:50px" maxlength="3">
+	        &nbsp;(1~15)
+	    </td>
+
+	    <td height="25" width="15%">数据VLAN</td>
+	    <td align="left" height="25" colspan="5" width="15%">
+	        <input name="data_vlan3" type="text" style="width:50px" maxlength="64">
+	        &nbsp;(VLAN范围:1~4094，VLAN之间用&quot;,&quot;分隔，&quot;-&quot;表示VLAN ID范围，如1,2,3-6)
+	    </td>
+
+	</tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%" style="display:none">子环虚拟通道</td>
+        <td align="left" height="25" width="15%" style="display:none">
+            <select name="virtual_channel3" class="select1">
+                <option value="0">启用</option>
+                <option value="1">禁用</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">协议报文目的MAC地址</td>
+        <td align="left" height="25" colspan="5" width="15%">
+            <select name="def_mac3" class="select_erps">
+                <option value="1">01-19-A7-00-00-01</option>
+                <option value="0">01-19-A7-00-00-[Ring ID]</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr align="left" valign="top" class="table_enable">
+        <td height="25" valign="middle">&nbsp;环网组4</td>
+        <td height="25" colspan="5" align="left" valign="middle">&nbsp;
+            <input type="radio" name="erps_enable4" value="1" autocomplete="off" onclick="set_enable(4)">
+            启用
+            &nbsp;&nbsp;&nbsp;
+            <input type="radio" name="erps_enable4" value="0" autocomplete="off" onclick="set_enable(4)">
+            禁用
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">环ID</td>
+        <td align="left" height="25" width="15%">
+            <input name="ring_id4" type="text" style="width:50px" maxlength="3">
+            &nbsp;(1~255)
+        </td>
+
+        <td height="25" width="15%">环类型</td>
+        <td align="left" height="25" width="15%">
+            <select name="ring_type4" class="select1" onchange="erps_type_change(4)">
+                <option value="1">主环</option>
+                <option value="2">子环</option>
+            </select>
+        </td>
+
+        <td height="25" width="20%">节点类型</td>
+        <td align="left" height="25" width="20%">
+            <select name="node_type4" class="select1" onchange="erps_node_change(4)">
+                <option value="0">Normal</option>
+                <option value="1">Owner</option>
+                <option value="2">Neighbor</option>
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">协议VLAN</td>
+        <td align="left" height="25" width="15%">
+            <input name="protocol_vlan4" type="text" style="width:50px" maxlength="4">
+            &nbsp;(1~4094)
+        </td>
+
+        <td height="25" width="15%">东向端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="east_port4" class="select1">
+            </select>
+        </td>
+
+        <td height="25" width="20%">西向端口</td>
+        <td align="left" height="25" width="20%">
+            <select name="west_port4" class="select1">
+            </select>
+        </td>
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">RPL端口</td>
+        <td align="left" height="25" width="15%">
+            <select name="rpl_direction4" class="select1">
+                <option value="0">东向端口</option>
+                <option value="1">西向端口</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">所属主环</td>
+        <td align="left" height="25" width="15%">
+            <input name="belong_major4" type="text" style="width:50px" maxlength="3">
+        </td>
+
+        <td height="25" width="15%">回切模式</td>
+        <td align="left" height="25" width="20%">
+            <select name="revertive4" class="select1">
+                <option value="0">不回切</option>
+                <option value="1">回切</option>
+            </select>
+        </td>
+
+    </tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%">WTR定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="wtr4" type="text" style="width:50px" maxlength="2">
+            &nbsp;(1~12分钟)
+        </td>
+
+        <td height="25" width="15%">Guard定时器</td>
+        <td align="left" height="25" width="15%">
+            <input name="guard4" type="text" style="width:50px" maxlength="4">
+            &nbsp;(10~2000毫秒)
+        </td>
+
+        <td height="25" width="20%">HoldOff定时器</td>
+        <td align="left" height="25" width="20%">
+            <input name="hold_off4" type="text" style="width:50px" maxlength="5">
+            &nbsp;(0~10000毫秒)
+        </td>
+    </tr>
+	</tr>
+	    <tr align="center" class="table_right">
+	    <td height="25" width="15%">ERPS ID</td>
+	    <td align="left" height="25" width="15%">
+	        <input name="erps_id4" type="text" style="width:50px" maxlength="3">
+	        &nbsp;(1~15)
+	    </td>
+
+	    <td height="25" width="15%">数据VLAN</td>
+	    <td align="left" height="25" colspan="5" width="15%">
+	        <input name="data_vlan4" type="text" style="width:50px" maxlength="64">
+	        &nbsp;(VLAN范围:1~4094，VLAN之间用&quot;,&quot;分隔，&quot;-&quot;表示VLAN ID范围，如1,2,3-6)
+	    </td>
+
+	</tr>
+    <tr align="center" class="table_right">
+        <td height="25" width="15%" style="display:none">子环虚拟通道</td>
+        <td align="left" height="25" width="15%" style="display:none">
+            <select name="virtual_channel4" class="select1">
+                <option value="0">启用</option>
+                <option value="1">禁用</option>
+            </select>
+        </td>
+
+        <td height="25" width="15%">协议报文目的MAC地址</td>
+        <td align="left" height="25" colspan="5" width="15%">
+            <select name="def_mac4" class="select_erps">
+                <option value="1">01-19-A7-00-00-01</option>
+                <option value="0">01-19-A7-00-00-[Ring ID]</option>
+            </select>
+        </td>
+    </tr>
+</table>
+
+<table width="1002"  border="0" align="center" cellspacing="0">
+<tr>
+	<td width="1001"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+</tr>
+<tr align="left" valign="top">
+	<td height="25" align="center" valign="top" style="padding-top:5px">
+		<span style="padding-top:5px">
+			<input type="Submit" name="Save" value="配置" onClick="return checkData();"  class="showbtn6">&nbsp;
+			<input type="button" name="Cancel" value="取消" onClick="location.href='setup.cgi?next_file=erps.html'"  class="showbtn6">
+		</span>
+	</td>
+</tr>
+</table>
+
+<!-- erps ring switch command table -->
+<table width="1002"  border="0" align="center" cellspacing="1">
+    <tr>
+        <td width="1001" colspan="4"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+    </tr>
+    <tr align="left" valign="top" class="table_enable">
+        <td height="25" valign="middle" colspan="4">&nbsp;&nbsp;ERPS环网倒换</td>
+    </tr>
+
+    <tr align="center" class="table_right">
+        <td height="25" width="25%">环ID</td>
+        <td align="left" height="25" width="25%">
+            <select name="s_ringid" class="select1" id="ringid_opt">
+                <!-- options added by js -->
+            </select>
+        </td>
+        <td height="25" width="25%">倒换方式</td>
+        <td align="left" height="25" width="25%">
+            <select name="s_switch" class="select1">
+                <option value="0">clear</option>
+                <option value="1">FS east</option>
+                <option value="2">FS west</option>
+                <option value="3">MS east</option>
+                <option value="4">MS west</option>
+            </select>
+        </td>
+    </tr>
+
+    <tr align="center" valign="top">
+        <td height="25" align="center" valign="top" style="padding-top:5px" colspan="4">
+		<span style="padding-top:5px">
+			<input type="Submit" name="command" value="倒换" onclick="switch_command()" class="showbtn6">&nbsp;
+		</span>
+        </td>
+    </tr>
+</table>
+
+<!-- erps ring info table -->
+<table width="1002"  border="0" align="center" cellspacing="1" id="erps_info">
+    <tr>
+        <td width="1001" colspan="15"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+    </tr>
+
+    <tr align="left" valign="middle" class="table_enable">
+        <td colspan="15">&nbsp;&nbsp;ERPS环网信息</td>
+    </tr>
+
+    <tr align="center" valign="top" class="table_enable">
+        <td>环ID</td>
+        <td>环类型</td>
+        <td>环状态</td>
+        <td>节点类型</td>
+        <td>协议VLAN</td>
+        <td>数据VLAN</td>
+        <td>ERPS_ID</td>
+        <td>所属主环</td>
+        <td>东向端口</td>
+        <td>西向端口</td>
+        <td>回切模式</td>
+        <td>虚拟通道</td>
+        <td>WTR</td>
+        <td>Guard</td>
+        <td>HoldOff</td>
+    </tr>
+
+    <!-- add erps info data by js -->
+</table>
+
+<table width="1002" border="0" align="center" cellspacing="1">
+    <tr align="center" valign="top">
+        <td height="25" align="center" valign="top" style="padding-top:5px" colspan="13">
+	        <span style="padding-top:5px">
+		        <input type="Submit" name="update" value="刷新" onclick="update_info()" class="showbtn6">&nbsp;
+	        </span>
+        </td>
+    </tr>
+</table>
+
+
+<input type="hidden" name="h_erps_enable" value="@h_erps_enable#">
+<input type="hidden" name="h_rstp_enable" value="@h_rstp_enable#">
+<input type="hidden" name="erps_ring_config" value="@erps_ring_config#">
+<input type="hidden" name="erps_node_config" value="@erps_node_config#">
+<input type="hidden" name="erps_timer_config" value="@erps_timer_config#">
+<input type="hidden" name="erps_switch" value="@erps_switch#">
+<input type="hidden" name="loader" value="@loader#">
+<input type="hidden" name="todo" value="save">
+<input type="hidden" name="this_file" value="erps.html">
+<input type="hidden" name="next_file" value="erps.html">
+<input type="hidden" name="message" value="@msg_text#">
+<input type="hidden" name="switch_type" value="@switch_type#">
+<input type="hidden" name="port_bits" value="@port_bits#">
+<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+<input type="hidden" name="port_status" value="@port_status#">
+<input type="hidden" name="trunk_setting" value="@trunk_setting#">
+<input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+<input type="hidden" name="storm_detect_port_policy" value="@storm_detect_port_policy#">
+<input type="hidden" name="h_storm_detect_enable" value="@h_storm_detect_enable#">
+<input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+<input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+<input type="hidden" name="port_map" value="@port_map#">
+<input type="hidden" name="h_manage_vlan" value="@h_manage_vlan#">
+</form>
+</body>
+</html>
+

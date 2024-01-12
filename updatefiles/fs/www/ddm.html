@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>光功率DDM</title>
+    <style type="text/css">
+        .aa {
+            color: #CCCCCC
+        }
+    </style>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        function showPortsDdm(ddmInfos) {
+            var cf = document.forms[0];
+            var ddms = new Array(), port_ddms = new Array();
+            var table = document.getElementById("ddmlist");
+            var startIndex = 0, i = 0, j = 0, k = 0, a = 0, b = 0, n = 0;
+            var HTMLStr, strPort;
+            var newRow;
+            var newCell;
+            var flag = 0;
+            var ports = cf.port_bits.value;
+            var port_type;
+
+            ddms = ddmInfos.split(";");
+            for (i = 0; i < ddms.length - 1; i++) {
+                while (ports) {
+                    if (ports & 1) {
+                        port_type = parseInt(cf.port_type.value.substring(k, k + 1));
+                        switch (port_type) {
+                            case 2:
+                                a++;
+                                flag = 0;
+                                i++;
+                                break;
+                            case 3:
+                            case 4:
+                            case 5:
+                                if ((cf.g_port_bits.value & (1 << k)) != 0) {
+                                    strPort = "G" + (++a);
+                                } else {
+                                    strPort = "XG" + (++b);
+                                }
+                                flag = 1;
+                                break;
+                            default:
+                                break;
+                        }
+                        ports >>= 1;
+                        k++;
+                        if (flag == 0) {
+                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+                    ports >>= 1;
+                    k++;
+                }
+
+                port_ddms = ddms[i].split(":");
+
+                newRow = table.insertRow(startIndex + n);
+                if (n % 2 == 0)
+                    newRow.className = "table_black";
+                else
+                    newRow.className = "table_right";
+                n++;
+
+                HTMLStr = "<div style=\"width:52px\" align=\"center\">" + strPort + "</div>";
+                newCell = newRow.insertCell(0);
+                newCell.innerHTML = HTMLStr;
+
+                HTMLStr = "<div style=\"width:53px\" align=\"center\">" + "光口" + "</div>";
+                newCell = newRow.insertCell(1);
+                newCell.innerHTML = HTMLStr;
+                for (j = 0; j < port_ddms.length; j++) {
+                    var tmp = port_ddms[j];
+
+                    HTMLStr = "<div style=\"width:53px\" align=\"center\">" + tmp + "</div>";
+                    newCell = newRow.insertCell(j + 2);
+                    newCell.innerHTML = HTMLStr;
+                    //if(j == 0)
+                    //    newCell.height = 20;
+                }
+            }
+        }
+
+        function init() {
+            var cf = document.forms[0];
+            showPortsDdm(cf.ddm.value);
+            dataToVisible(cf);
+        }
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span
+                                        class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">端口配置</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">光功率DDM</span></td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25">
+                    <table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+                        <tr class="td2">
+                            <td width="10%" height="25" align="center" valign="middle">端口号</td>
+                            <td width="10%" height="25" align="center" valign="middle">接口类型</td>
+                            <td width="10%" height="25" align="center" valign="middle">波长(nm)</td>
+                            <td width="10%" height="25" align="center" valign="middle">距离(m)</td>
+                            <td width="10%" height="25" align="center" valign="middle">速率(MBd)</td>
+                            <td width="10%" height="25" align="center" valign="middle">工作温度(℃)</td>
+                            <td width="10%" height="25" align="center" valign="middle">工作电压(V)</td>
+                            <td width="10%" height="25" align="center" valign="middle">接收端功率(dBm)</td>
+                            <td width="10%" height="25" align="center" valign="middle">发送端功率(dBm)</td>
+                            <td width="10%" height="25" align="center" valign="middle">偏置电流(mA)</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25">
+                    <table id="ddmlist" width="1002" border="0" cellpadding="0" cellspacing="1"
+                        style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="button" name="Refresh" value="刷新" class="showbtn6"
+                            onClick="location.href='setup.cgi?next_file=ddm.html'">
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <input type="hidden" name="port_type" value="@port_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="f_port_bits" value="@f_port_bits#">
+        <input type="hidden" name="ddm" value="@ddm#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="this_file" value="ddm.html">
+        <input type="hidden" name="next_file" value="ddm.html">
+    </form>
+</body>
+
+</html>

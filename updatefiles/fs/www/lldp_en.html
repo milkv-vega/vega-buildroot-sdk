@@ -1,0 +1,709 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>LLDP</title>
+	<style type="text/css">
+		.aa {
+			color: #CCCCCC
+		}
+	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="javascript">
+		function init() {
+			var cf = document.forms[0];
+			var t = 0, i = 0, j = 0;
+			var manage_address = cf.lldp_manage_addr.value.split(";");
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var fPorts = cf.f_port_bits.value;
+			var phy_map = cf.port_ext_phy.value;
+			var sw_type = cf.release_ver.value;
+			var arrText = new Array(), arrValue = new Array();
+			var objTb = document.getElementById("portlist");
+			var port_cpu = parseInt(cf.cpu_port.value);
+			var arrType = new Array(), arrName = new Array(), arrClassName = new Array(), arrInputType = new Array(), arrWide = new Array();
+
+			show_language_flag();
+			set_tlv_enable();
+			for (t = 0; t < 4; t++) {
+				switch (t) {
+					case 0:
+						arrClassName[t] = "";
+						arrInputType[t] = "checkbox";
+						arrType[t] = "input";
+						arrName[t] = "enable";
+						arrWide[t] = "22.5%";
+						break;
+					case 1:
+						arrClassName[t] = "select";
+						arrInputType[t] = "";
+						arrType[t] = "select";
+						arrName[t] = "work_mode";
+						arrWide[t] = "22.5%";
+						break;
+					case 2:
+						arrClassName[t] = "select";
+						arrInputType[t] = "";
+						arrType[t] = "select";
+						arrName[t] = "page_type";
+						arrWide[t] = "22.5%";
+						break;
+					case 3:
+						arrClassName[t] = "";
+						arrInputType[t] = "text";
+						arrType[t] = "input";
+						arrName[t] = "manage_addr";
+						arrWide[t] = "22.5%";
+						break;
+					default:
+						break;
+				}
+			}
+			comCreateTableElementById(1, ports, gPorts, objTb, arrType, arrName, arrClassName, arrWide, arrInputType);
+			comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 1, undefined, undefined, "setLldpConfig()");
+			for (t = 0; t < 4; t++) {
+				switch (t) {
+					case 0:
+						arrText[t] = "TX";
+						break;
+					case 1:
+						arrText[t] = "RX";
+						break;
+					case 2:
+						arrText[t] = "TXRX";
+						break;
+					case 3:
+						arrText[t] = "Disable";
+						break;
+				}
+				arrValue[t] = t;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[1]), 0, document.getElementsByName(arrName[1]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+			arrText = arrText.slice(0, 2);
+			arrValue = arrValue.slice(0, 2);
+			for (t = 0; t < arrText.length; t++) {
+				if (t == 0)
+					arrText[t] = "ETHII";
+				else
+					arrText[t] = "SNAP";
+				arrValue[t] = t;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[2]), 0, document.getElementsByName(arrName[2]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+			i = 0; t = 0;
+			while (ports) {
+				if (ports & 1) {
+					if (cf.lldp_port_enable.value.substring(t, t + 1) == '1')
+						cf.enable[i].checked = true;
+
+					if (cf.lldp_port_work_mode.value.substring(t, t + 1) == '1') {
+						cf.work_mode[i].value = '0';
+					}
+					else if (cf.lldp_port_work_mode.value.substring(t, t + 1) == '2') {
+						cf.work_mode[i].value = '1';
+					}
+					else if (cf.lldp_port_work_mode.value.substring(t, t + 1) == '3') {
+						cf.work_mode[i].value = '2';
+					}
+					else {
+						cf.work_mode[i].value = '3';
+					}
+
+					if (cf.lldp_page_type.value.substring(t, t + 1) == '0') {
+						cf.page_type[i].value = '0';
+					}
+					else {
+						cf.page_type[i].value = '1';
+					}
+
+					if (manage_address[t] == ' ')
+						cf.manage_addr[i].value = cf.manage_ip.value;
+					else
+						cf.manage_addr[i].value = manage_address[t];
+
+					i++;
+				}
+				ports >>= 1;
+				t++;
+			}
+
+			var infoTb = document.getElementById("loginfo");
+			var arrNeigbhorInfo = cf.lldp_neigbhor_info.value.split(";");
+			var arrInfo = new Array();
+			var infoTdTmp;
+			var a = 0;
+
+			for (i = 0; i < arrNeigbhorInfo.length - 1; i++) {
+				var infoTr = infoTb.insertRow(i);
+				infoTr.align = "center";
+				infoTr.valign = "middle";
+				if (i % 2) {
+					infoTr.className = "table_right";
+					infoTr.bgcolor = "#DEDEDD";
+				}
+				else
+					infoTr.className = "table_black";
+				j = 0;
+				arrInfo = arrNeigbhorInfo[i].split(',');
+				for (a = 0; a < 7; a++) {
+					infoTdTmp = infoTb.rows[i].insertCell(j++);
+					infoTdTmp.height = 20;
+					infoTdTmp.align = "center";
+					infoTdTmp.valign = "middle";
+					if (a == 0)
+						infoTdTmp.width = "10%";
+					else
+						infoTdTmp.width = "15%";
+
+					var strInput = "";
+
+					switch (a) {
+						case 0:
+							strInput = arrInfo[0];
+							break;
+						case 1:
+							strInput = arrInfo[1];
+							break;
+						case 2:
+							strInput = arrInfo[2];
+							break;
+						case 3:
+							strInput = "MAC Address";
+							break;
+						case 4:
+							strInput = arrInfo[3];
+							break;
+						case 5:
+							strInput = "Interface Name";
+							break;
+						case 6:
+							strInput = arrInfo[4];
+							break;
+						default:
+							break;
+					}
+					infoTdTmp.innerHTML = strInput;
+				}
+			}
+
+			dataToVisible(cf);
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+			else
+				set_lldp_enable();
+
+			i = 0;
+			var ports_tem = cf.port_bits.value;
+			while (ports_tem) {
+				setDisabled(true, cf.page_type[i]);
+				i++;
+				ports_tem >>= 1;
+			}
+		}
+
+		function set_tlv_enable() {
+			var cf = document.forms[0];
+			var tlv = parseInt(cf.lldp_tlv_type.value);
+			var i = 0;
+
+			cf.tx_fast_num.value = cf.lldp_fast_number.value;
+			cf.ttl_num.value = cf.lldp_TtlMultiplier.value;
+			cf.tx_interval.value = cf.lldp_txInterval.value;
+			cf.reset_delay.value = cf.lldp_reset_delay.value;
+			for (; i < 5; i++) {
+				switch (i) {
+					case 0:
+						if ((tlv >> i) & 1)
+							cf.port_description.checked = true;
+						else
+							cf.port_description.checked = false;
+					case 1:
+						if ((tlv >> i) & 1)
+							cf.system_name.checked = true;
+						else
+							cf.system_name.checked = false;
+					case 2:
+						if ((tlv >> i) & 1)
+							cf.system_description.checked = true;
+						else
+							cf.system_description.checked = false;
+					case 3:
+						if ((tlv >> i) & 1)
+							cf.system_capabilities.checked = true;
+						else
+							cf.system_capabilities.checked = false;
+					case 4:
+						if ((tlv >> i) & 1)
+							cf.management_address.checked = true;
+						else
+							cf.management_address.checked = false;
+				}
+			}
+		}
+
+		function set_lldp_enable() {
+			var cf = document.forms[0];
+			var i = 0, t = 0;
+			var ports = cf.port_bits.value;
+			var dflag = (getRadioCheckedValue(cf.lldp_enable) == "disable");
+
+			setDisabled(dflag, cf.tx_fast_num);
+			setDisabled(dflag, cf.ttl_num);
+			setDisabled(dflag, cf.tx_interval);
+			setDisabled(dflag, cf.reset_delay);
+			setDisabled(dflag, cf.management_address);
+			setDisabled(dflag, cf.port_description);
+			setDisabled(dflag, cf.system_capabilities);
+			setDisabled(dflag, cf.system_description);
+			setDisabled(dflag, cf.system_name);
+
+			while (ports) {
+				if (ports & 1) {
+					if (dflag == false) {
+						setDisabled(false, cf.enable[i]);
+						if (cf.enable[i].checked == true) {
+							setDisabled(false, cf.work_mode[i]);
+							//setDisabled(false, cf.page_type[i]);
+							if (cf.management_address.checked == true)
+								setDisabled(dflag, cf.manage_addr[i]);
+							else
+								setDisabled(true, cf.manage_addr[i]);
+						}
+						else {
+							setDisabled(true, cf.work_mode[i]);
+							//setDisabled(true, cf.page_type[i]);
+							setDisabled(true, cf.manage_addr[i]);
+						}
+					}
+					else {
+						setDisabled(true, cf.enable[i]);
+						setDisabled(true, cf.work_mode[i]);
+						//setDisabled(true, cf.page_type[i]);
+						setDisabled(true, cf.manage_addr[i]);
+					}
+					i++;
+				}
+				ports >>= 1;
+			}
+		}
+
+		function setLldpConfig() {
+			var cf = document.forms[0];
+			var i = 0;
+			var ports = cf.port_bits.value;
+
+			while (ports) {
+				if (ports & 1) {
+					if (cf.enable[i].checked == true) {
+						setDisabled(false, cf.work_mode[i]);
+						//setDisabled(false, cf.page_type[i]);
+						if (cf.management_address.checked == true)
+							setDisabled(false, cf.manage_addr[i]);
+						else
+							setDisabled(true, cf.manage_addr[i]);
+					}
+					else {
+						setDisabled(true, cf.work_mode[i]);
+						//setDisabled(true, cf.page_type[i]);
+						setDisabled(true, cf.manage_addr[i]);
+					}
+					i++;
+				}
+				ports >>= 1;
+			}
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var tlvSum = 0, i = 0, a = 0, b = 0, t = 0;
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var workSum = "", msg = "", strPort = "";
+			var portEnable = "", pagType = "", manageIp = "";
+			var num = cf.lldp_manage_addr.value.split(";");
+			var r = /^[1-9]+[0-9]*$/;
+
+			if (cf.tx_fast_num.value.match(r)) {
+				if (cf.tx_fast_num.value >= 1 && cf.tx_fast_num.value <= 8)
+					cf.lldp_fast_number.value = cf.tx_fast_num.value;
+				else
+					msg += "The valid value of the number of fast messages sent is 1~8!\n";
+			}
+			else {
+				msg += "The valid value of the number of fast messages sent is 1~8!\n";
+			}
+
+			if (cf.ttl_num.value.match(r)) {
+				if (cf.ttl_num.value >= 2 && cf.ttl_num.value <= 10)
+					cf.lldp_TtlMultiplier.value = cf.ttl_num.value;
+				else
+					msg += "The TTL multiplier range value is 2~10!\n";
+			}
+			else {
+				msg += "The TTL multiplier range value is 2~10!\n";
+			}
+
+			if (cf.tx_interval.value.match(r)) {
+				if (cf.tx_interval.value >= 5 && cf.tx_interval.value <= 32768)
+					cf.lldp_txInterval.value = cf.tx_interval.value;
+				else
+					msg += "The TX interval range value is 3~32768!\n";
+			}
+			else {
+				msg += "The TX interval range value is 3~32768!\n";
+			}
+
+			if (cf.reset_delay.value.match(r)) {
+				if (cf.reset_delay.value >= 1 && cf.reset_delay.value <= 10)
+					cf.lldp_reset_delay.value = cf.reset_delay.value;
+				else
+					msg += "The port init time range value is 1~10!\n";
+			}
+			else {
+				msg += "The port init time range value is 1~10!\n";
+			}
+
+			if (cf.port_description.checked == true)
+				tlvSum += 1;
+			if (cf.system_name.checked == true)
+				tlvSum += 2;
+			if (cf.system_description.checked == true)
+				tlvSum += 4;
+			if (cf.system_capabilities.checked == true)
+				tlvSum += 8;
+			if (cf.management_address.checked == true)
+				tlvSum += 16;
+			cf.lldp_tlv_type.value = tlvSum;
+
+			for (t = 0; t < num.length - 1; t++) {
+				if ((cf.port_bits.value & (1 << t)) == 0) {
+					portEnable += '0';
+					workSum += '3';
+					pagType += '0';
+					manageIp += " ;";
+					continue;
+				}
+
+				if (gPorts & 1)
+					strPort = "G" + (++a);
+				else
+					strPort = "XG" + (++b);
+
+				if (cf.enable[i].checked == true) {
+					portEnable += '1';
+					switch (cf.work_mode[i].value) {
+						case '0':
+							workSum += '1';
+							break;
+						case '1':
+							workSum += '2';
+							break;
+						case '2':
+							workSum += '3';
+							break;
+						case '3':
+							workSum += '4';
+							break;
+						default:
+							break;
+					}
+
+					if (cf.page_type[i].value == '0')
+						pagType += '0';
+					else
+						pagType += '1';
+
+					if (check_ip(cf.manage_addr[i]) == false)
+						msg += addstr("The address for port %s is invalid, please enter again\n", strPort);
+
+					if (cf.manage_addr[i].value == cf.manage_ip.value) {
+						manageIp += " ;";
+					}
+					else if (cf.manage_addr[i].value == "127.0.0.1") {
+						manageIp += cf.manage_addr[i].value + ';';
+					}
+					else {
+						manageIp += " ;";
+						msg += addstr("The management address of port%s can only be the IP address of the local switch or the Loopback address, please enter again\n", strPort);
+					}
+				}
+				else {
+					portEnable += '0';
+					workSum += '3';
+					pagType += '0';
+					manageIp += " ;";
+				}
+				i++;
+				ports >>= 1;
+			}
+			cf.lldp_port_enable.value = portEnable;
+			cf.lldp_port_work_mode.value = workSum;
+			cf.lldp_page_type.value = pagType;
+			cf.lldp_manage_addr.value = manageIp;
+
+			dataToHidden(cf);
+			return checkMsg(msg);
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			var i = 0;
+			var ports = cf.port_bits.value;
+
+			setDisabled(true, cf.lldp_enable[0], cf.lldp_enable[1]);
+			setDisabled(true, cf.tx_fast_num, cf.ttl_num, cf.tx_interval, cf.reset_delay);
+			setDisabled(true, cf.port_description, cf.system_name, cf.system_description, cf.system_capabilities, cf.management_address);
+			setDisabled(true, cf.Save, cf.Cancel);
+			setDisabled(true, cf.Refresh);
+
+			while (ports) {
+				if (ports & 1) {
+					setDisabled(true, cf.enable[i]);
+					setDisabled(true, cf.work_mode[i]);
+					//setDisabled(true, cf.page_type[i]);
+					setDisabled(true, cf.manage_addr[i]);
+					i++;
+				}
+				ports >>= 1;
+			}
+		}
+
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+								</span>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td width="307" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+									Page &gt;&gt;</strong><span class="style4"> Link Layer </span><strong
+									class="style4">&gt;&gt;</strong><span class="style3">LLDP</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top" class="table_enable">
+				<td height="25" width="150" valign="middle">&nbsp;&nbsp;LLDP Global Config</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="1">
+						<tr>
+							<td width="15%" height="25" class="table_left">&nbsp;&nbsp;LLDP Enable</td>
+							<td width="85%" height="25" class="table_right">&nbsp;
+								<input type="radio" name="lldp_enable" value="enable" autocomplete="off"
+									onchange="set_lldp_enable()" />
+								Enable
+								&nbsp;
+								<input type="radio" name="lldp_enable" value="disable" autocomplete="off"
+									onchange="set_lldp_enable()" />
+								Disable
+							</td>
+						</tr>
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;Fast TX Packets Number</td>
+							<td class="table_right">&nbsp;
+								<input type="text" name="tx_fast_num" class="input_txt2" maxlength="1" />
+								(range value 1~8)
+							</td>
+						</tr>
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;TTL Multiplier</td>
+							<td class="table_right">&nbsp;
+								<input type="text" name="ttl_num" class="input_txt2" maxlength="2" />
+								(range value 2~10)
+							</td>
+						</tr>
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;TX Interval</td>
+							<td class="table_right">&nbsp;
+								<input type="text" name="tx_interval" class="input_txt2" maxlength="5" />
+								(range value 5~32768s)
+							</td>
+						</tr>
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;Port Init Time</td>
+							<td class="table_right">&nbsp;
+								<input type="text" name="reset_delay" class="input_txt2" maxlength="2" />
+								(range value 1~10s)
+							</td>
+						</tr>
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;TLV select</td>
+							<td class="table_right">&nbsp;
+								<input name="port_description" type="checkbox" value="1">&nbsp;Port Description
+								<input name="system_name" type="checkbox" value="1">&nbsp;System Name
+								<input name="system_description" type="checkbox" value="1">&nbsp;System Description
+								<input name="system_capabilities" type="checkbox" value="1">&nbsp;System Capabilities
+								<input name="management_address" type="checkbox" value="1"
+									onclick="setLldpConfig()">&nbsp;Management Address
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top" class="table_enable">
+				<td height="25" width="150" valign="middle">&nbsp;&nbsp;LLDP Port Config</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">Port Number</td>
+							<td width="22.5%" height="25" align="center" valign="middle">LLDP Enable</td>
+							<td width="22.5%" height="25" align="center" valign="middle">LLDP Work Mode</td>
+							<td width="22.5%" height="25" align="center" valign="middle">LLDP Packaging Format</td>
+							<td width="22.5%" height="25" align="center" valign="middle">LLDP Manage Address</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table id="portlist" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+
+					</table>
+				</td>
+			</tr>
+
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top" class="table_enable">
+				<td height="25" width="150" valign="middle">&nbsp;&nbsp;LLDP Neigbhor Information</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">Index</td>
+							<td width="15%" height="25" align="center" valign="middle">Host Interface Name</td>
+							<td width="15%" height="25" align="center" valign="middle">Neighborhood Equipment
+								Identification</td>
+							<td width="15%" height="25" align="center" valign="middle">Device Identification Type</td>
+							<td width="15%" height="25" align="center" valign="middle">Neighborhood Port Identification
+							</td>
+							<td width="15%" height="25" align="center" valign="middle">Port Identification Type</td>
+							<td width="15%" height="25" align="center" valign="middle">System Name</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="5">
+					<table id="loginfo" width="100%" height="25" border="0" cellspacing="1" valign="middle"
+						style="font-size:12px;font-family:Arial, Helvetica, sans-serif,宋体;">
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="Submit" name="Save" value="Submit" onClick="return checkData();"
+							class="showbtn6">&nbsp;
+						<input type="button" name="Refresh" value="Refresh"
+							onClick="location.href='setup.cgi?next_file=lldp_en.html'" class="showbtn6">&nbsp;
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=lldp_en.html'" class="showbtn6">
+					</span>
+				</td>
+			</tr>
+		</table>
+		<input type="hidden" name="manage_ip" value="@lan_ip#">
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="release_ver" value="@release_ver#">
+		<input type="hidden" name="port_ext_phy" value="@port_ext_phy#">
+		<input type="hidden" name="port_change" value="@port_change#">
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="lldp_en.html">
+		<input type="hidden" name="next_file" value="lldp_en.html">
+		<input type="hidden" name="message" value="@loader#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="f_port_bits" value="@f_port_bits#">
+		<input type="hidden" name="h_vlan_type" value="@h_vlan_type#">
+		<input type="hidden" name="vlan_q_type" value="@vlan_q_type#">
+		<input type="hidden" name="cpu_port" value="@cpu_port#">
+		<input type="hidden" name="h_lldp_enable" value="@h_lldp_enable#" type="hidden">
+		<input type="hidden" name="lldp_port_enable" value="@lldp_port_enable#">
+		<input type="hidden" name="lldp_fast_number" value="@lldp_fast_number#">
+		<input type="hidden" name="lldp_TtlMultiplier" value="@lldp_TtlMultiplier#">
+		<input type="hidden" name="lldp_txInterval" value="@lldp_txInterval#">
+		<input type="hidden" name="lldp_reset_delay" value="@lldp_reset_delay#">
+		<input type="hidden" name="lldp_port_work_mode" value="@lldp_port_work_mode#">
+		<input type="hidden" name="lldp_page_type" value="@lldp_page_type#">
+		<input type="hidden" name="lldp_tlv_type" value="@lldp_tlv_type#">
+		<input type="hidden" name="lldp_manage_addr" value="@lldp_manage_addr#">
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="lldp_neigbhor_info" value="@lldp_neigbhor_info#">
+		<input type="hidden" name="switch_type" value="@switch_type#">
+		<input type="hidden" name="this_file1" value="lldp.html">
+		<input type="hidden" name="next_file1" value="lldp.html">
+	</form>
+</body>
+
+</html>

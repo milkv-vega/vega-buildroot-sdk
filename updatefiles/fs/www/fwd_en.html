@@ -1,0 +1,471 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Static Multicast Forward List</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="Javascript" for="document" event="onkeydown">//获取页面的回车事件
+        if (event.keyCode == 13) {
+            return additem();
+        }
+    </script>
+    <script language="JavaScript">
+        var count = 0;
+
+        function isRsvMac(macaddr) {
+            var cf = document.forms[0];
+            var msg = "";
+            var reg = /^0180C2[0-9a-fA-F]{6}$/;
+
+            if (macaddr.match(reg))
+                msg += msg_forward_bpdu;
+
+            reg = /^01005E0000[0-9a-fA-F]{2}$/;
+            if (macaddr.match(reg))
+                msg += msg_forward_multi;
+
+            return checkMsg(msg);
+        }
+
+        function additem() {
+            var cf = document.forms[0];
+            var msg = "", mac = "";
+            var port_maps = 0;
+            var lag_maps = 0;
+            var i, n = 0;
+            var flag = false;
+            var overwrite_mac = 0;
+            var checkval = new Array();
+
+            cf.mac_address.value = cf.mac_address.value.toUpperCase();
+            cf.mac_address.value = cf.mac_address.value.replace(/:/g, "");
+            cf.mac_address.value = cf.mac_address.value.replace(/-/g, "");
+
+            if (badMac(cf.mac_address, false) == true) {
+                msg += fwd_err_mac;
+                return checkMsg(msg);
+            }
+
+            msg += checkInt(cf.mac_vid, "Static Multicast VID", 1, 4094, true);
+
+            if (isMulticastMac(cf.mac_address.value) == false)//unicast
+            {
+                msg += msg_uni_igmp;
+                return checkMsg(msg);
+            }
+
+            mac = cf.mac_address.value.replace(/-/g, "");
+            if (isRsvMac(mac) == false)
+                return false;
+
+            mac += ":" + cf.mac_vid.value;
+            if (msg == "") {
+                for (i = 1; i < cf.forward_list.options.length; i++) {
+                    //checkval = cf.forward_list.options[i].value.split(":");
+                    //if(mac == checkval[0])
+                    if (mac == cf.forward_list.options[i].value) {
+                        flag = confirm("The Static Multicast MAC Address entry exists, cover it?");
+                        if (flag == true) {
+                            overwrite_mac = i;
+                            break;
+                        }
+                        else
+                            return false;
+                    }
+                }
+            }
+
+            if (!overwrite_mac) {
+                if (count >= 512)
+                    msg += msg_max_mul;
+            }
+
+
+            for (i = 0; i < cf.fwd_mport.length; i++) {
+                if (cf.fwd_mport[i].checked == true) {
+                    n = parseInt(cf.fwd_mport[i].value.replace(/form_port/g, ""));//warning
+                    port_maps |= 1 << n;
+                }
+            }
+            for (i = 0; i < cf.mc_lag_checkbox.length; i++)
+                if (cf.mc_lag_checkbox[i].checked == true && cf.mc_lag_checkbox[i].parentNode.style.display != "none")
+                    lag_maps |= (1 << i);
+
+
+            if ((port_maps == 0) && (lag_maps == 0))
+                msg += msg_no_fwd_port;
+
+            if (msg == "") {
+                cf.staticmacadd.value = mac + ":" + port_maps + ":" + lag_maps;
+                cf.staticmacdel.value = "";
+            }
+
+            return checkMsg(msg);
+        }
+
+        function delitem() {
+            var cf = document.forms[0];
+            var pos = cf.forward_list.selectedIndex;
+
+            if (pos > 0) {
+                var delmac = cf.forward_list.options[pos].value;
+                cf.staticmacadd.value = "";
+                cf.staticmacdel.value = delmac;
+            } else
+                return false;
+
+            return true;
+        }
+
+        function set_mode() {
+            var cf = document.forms[0];
+            var i = 0;
+            var trunk_maps = 0;
+            var lacp_maps = 0;
+            var arr_trunk_setting = cf.trunk_setting.value.split(";");
+            var arr_lacp_port_cfg = cf.lacp_port_cfg.value.split(";");
+
+            if ("enable" == cf.h_trunk_enable.value) {
+                for (i = 0; i < arr_trunk_setting.length - 1; i++) {
+                    if (arr_trunk_setting[i].split(":")[1] == "1")
+                        trunk_maps |= arr_trunk_setting[i].split(":")[0];
+                }
+            }
+
+            if ("1" == cf.h_lacp_enable.value) {
+                for (i = 0; i < arr_lacp_port_cfg.length - 1; i++) {
+                    if (arr_lacp_port_cfg[i].split(":")[2] == "1")
+                        lacp_maps |= (1 << i);
+                }
+            }
+
+            for (i = 0; i < cf.fwd_mport.length; i++) {
+                if (trunk_maps & (1 << i))
+                    setDisabled(true, cf.form_port[i]);
+                if (lacp_maps & (1 << i))
+                    setDisabled(true, cf.form_port[i]);
+            }
+        }
+
+        function init() {
+            var cf = document.forms[0];
+            var t = 0, b = 0, i = 0, tmp, n = 0, a = 0;
+            var umac = new Array();
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var objTb = document.getElementById("portlist");
+            var strPort;
+            var msg = "";
+
+            show_language_flag();
+            //test
+            //ports = 959;//0x1110111111;//1,2,3,4,5,6,G1,G2.G3
+            //gPorts = 896;//0x11110000000
+            //cf.switch_port.value = 11;
+            //test
+            //function comCreateElement(ports, gPorts, objTb, inputType, inputName, portNoType, inputId, inputValue, inputStyle, others)
+
+            if (parseInt(cf.macexist.value) == 1) {
+                msg += "The Mac already exists in dynamic mac address!";
+                checkMsg(msg);
+            }
+
+            comCreateElement(ports, gPorts, objTb, "checkbox", "fwd_mport", undefined, "form_port", "form_port", "margin-bottom:2px", 1, undefined, 1);
+            create_lag_mc_port(objTb);
+            umac = cf.staticmac.value.split(";");
+            while (t < (umac.length - 1)) {
+                var mac = new Array();
+                mac = umac[t].split(":");
+
+                tmp = "---" + (t + 1);
+                for (i = fucCheckLength(tmp); i < 7; i++)
+                    tmp += "-";
+                if (i == 7)
+                    tmp += "------";//index
+
+                tmp += mac[0].substring(0, 2)
+                    + "-" + mac[0].substring(2, 4)
+                    + "-" + mac[0].substring(4, 6)
+                    + "-" + mac[0].substring(6, 8)
+                    + "-" + mac[0].substring(8, 10)
+                    + "-" + mac[0].substring(10, 12);
+                tmp += "--------";//mac
+
+                //vid
+                tmp += mac[1];
+                for (i = 0; i < 16 - mac[1].length; i++)
+                    tmp += "-";
+
+                ports = cf.port_bits.value;
+                gPorts = cf.g_port_bits.value;
+                a = 0; b = 0; i = 0;
+                while (ports) {
+                    if (ports & 1) {
+                        if (gPorts & 1)
+                            strPort = "G" + (++a);
+                        else
+                            strPort = "XG" + (++b);
+                        if (mac[2] & (1 << i))
+                            tmp += strPort + "　";
+                    }
+                    ports >>= 1;
+                    gPorts >>= 1;
+                    i++;
+                }
+
+                for (i = 0; i < 8; i++) {
+                    if (mac[3] & (1 << i))
+                        tmp += "LAG" + (i + 1) + "　";
+                }
+
+                cf.forward_list.options.add(new Option(tmp, mac[0] + ":" + mac[1]));//mac:vid
+                count++;
+                t++;
+            }
+            set_mode();
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+        }
+        function get_mc_lag_show() {
+            var cf = document.forms[0];
+            var arr_mc_lag = new Array();
+            var vlan_lag_str = cf.vlan_lag_port_set.value.split(";");
+
+            for (var i = 0; i < vlan_lag_str.length - 1; i++)
+                if (vlan_lag_str[i].split(":")[4] != 0)
+                    arr_mc_lag[parseInt(vlan_lag_str[i].split(":")[4]) - 1] = 1;
+
+            return arr_mc_lag;
+        }
+
+        function create_lag_mc_port(objTb) {
+            var cf = document.forms[0];
+            var lag_num = cf.trunk_setting.value.split(";").length - 1;
+            var strInput = "";
+            var i = 0;
+            var tr_cell = parseInt(cf.switch_port.value) % 15;
+            var objTmp;
+            var strPort;
+
+            var lag_show = get_mc_lag_show();
+            objTr = objTb.childNodes[1].childNodes[objTb.childNodes[1].rows.length - 1];
+
+            for (i = 0; i < lag_num; i++) {
+                if (objTr.cells.length > 28) {
+                    objTr = objTb.insertRow(objTb.childNodes[1].rows.length);
+                    objTr.insertCell(0).innerHTML = "&nbsp;&nbsp;";
+                    tr_cell = 0;
+                }
+
+                strPort = "LAG" + (i + 1);
+
+                objTd = objTr.insertCell(tr_cell * 2 + 1);
+                objTd.innerHTML = "<div align='center' name='mc_lag_name'>" + strPort + "</div>";
+                objTd.width = "15";
+                if (!lag_show[i])
+                    objTd.style.display = "none";
+
+                objTd = objTr.insertCell(tr_cell * 2 + 2);
+                strInput = "<input type='checkbox' name='mc_lag_checkbox' ";
+                strInput += ("value='" + i + "' ");
+                strInput += " style=margin-bottom:2px >";
+                objTd.innerHTML = strInput;
+                if (!lag_show[i])
+                    objTd.style.display = "none";
+                tr_cell++;
+
+            }
+        }
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.mac_address);
+            setDisabled(true, cf.mac_vid);
+            setDisabled(true, cf.Add);
+            setDisabled(true, cf.Delete);
+            for (var i = 0; i < cf.fwd_mport.length; i++)
+                setDisabled(true, cf.fwd_mport[i]);
+            setDisabled(true, cf.check_all);
+        }
+
+        function checkAllPorts() {
+            var cf = document.forms[0];
+            var i = 0;
+
+            if (cf.check_all.value == "Check All") {
+                cf.check_all.value = "Cancel";
+                for (i = 0; i < cf.fwd_mport.length; i++)
+                    cf.fwd_mport[i].checked = true;
+
+                for (i = 0; i < cf.mc_lag_checkbox.length; i++)
+                    if (cf.mc_lag_checkbox[i].parentNode.style.display != "none")
+                        cf.mc_lag_checkbox[i].checked = true;
+            }
+            else {
+                cf.check_all.value = "Check All";
+                for (i = 0; i < cf.fwd_mport.length; i++)
+                    cf.fwd_mport[i].checked = false;
+
+                for (i = 0; i < cf.mc_lag_checkbox.length; i++)
+                    if (cf.mc_lag_checkbox[i].parentNode.style.display != "none")
+                        cf.mc_lag_checkbox[i].checked = false;
+            }
+        }
+
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td width="415" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+                                    Page &gt;&gt;</strong> <strong class="style4"> Link Layer &gt;&gt;</strong><span
+                                    class="style3"> Static Multicast Forward List</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25">
+                    <table width="1001" border="0" cellspacing="1">
+                        <tr>
+                            <td width="184" height="25" class="table_left">&nbsp;&nbsp;Static Multicast MAC Address</td>
+                            <td width="810" class="table_right" style="text-transform:uppercase">&nbsp;
+                                <input type="text" name="mac_address" class="input_txt2" maxlength="17" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;VID</td>
+                            <td class="table_right" style="text-transform:uppercase">&nbsp;
+                                <input type="text" name="mac_vid" class="input_txt2" maxlength="4" />
+                                <a>(1-4094)</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="40" class="table_left">&nbsp;&nbsp;Port List</td>
+                            <td class="table_right">
+                                <table border="0" cellspacing="0" id="portlist">
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td width="184" height="25" class="table_left">&nbsp;&nbsp;Options</td>
+                            <td class="table_right">&nbsp;
+                                <input type="submit" name="Add" value="Add" class="showbtn7"
+                                    onclick="return additem()" />
+                                <input type="submit" name="Delete" value="Delete" class="showbtn7"
+                                    onclick="return delitem()" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1" cellpadding="0">
+                        <tr height="8">
+                            <td width="1001">
+                                <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <select name="forward_list" size="24" id="uselect"
+                                    style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                                    <option value="0">
+                                        --SN--------------MAC-----------------VLAN----------------PORT-----------------------------------------------------------------------------------------------------
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="staticmac" value="@staticmac#">
+        <input type="hidden" name="device_mac" value="@device_mac#">
+        <input type="hidden" name="staticmacadd" value="@staticmacadd#">
+        <input type="hidden" name="staticmacdel" value="@staticmacdel#">
+        <input type="hidden" name="macexist" value="@macexist#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="fwd_en.html">
+        <input type="hidden" name="next_file" value="fwd_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="vlan_port_set" value="@vlan_port_set#">
+        <!--use for build inner html -->
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+        <input type="hidden" name="trunk_setting" value="@trunk_setting#">
+        <input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+        <input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+        <input type="hidden" name="vlan_lag_port_set" value="@vlan_lag_port_set#">
+        <!-- end-->
+    </form>
+</body>
+
+</html>

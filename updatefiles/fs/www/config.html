@@ -1,0 +1,464 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>文件管理</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        < !-
+            function init() {
+                var cf = document.forms[1];
+                var cfDefault = document.forms[1];
+                var cfRemain = document.forms[4];
+                var cfUpgrade = document.forms[3];
+                if (cfDefault.remain_ip.checked == true)
+                    cfDefault.default_remain_ip.value = "1"
+                else
+                    cfDefault.default_remain_ip.value = "0"
+
+                if (cf.loader.value != "admin") {
+                    cf = document.forms[0];
+                    setDisabled(true, cf.reboot);
+
+                    cf = document.forms[1];
+                    setDisabled(true, cf.restore, cf.remain_ip);
+
+                    cf = document.forms[2];
+                    setDisabled(true, cf.upload, cf.upload_file, cf.textfield_file);
+
+                    //cf = document.forms[4];
+                    //setDisabled(true,cf.remain);
+
+                    cf = document.forms[3];
+                    setDisabled(true, cf.upgrade, cf.upgrade_file, cf.textfield);
+
+                    setDisabled(true, document.getElementById('load_cfg'));
+                    setDisabled(true, document.getElementById('remain_cfg'));
+                    setDisabled(true, document.getElementById('upfile_name'));
+                    setDisabled(true, document.getElementById('upgrade_file_name'));
+                    var Sys = {};
+                    var ua = navigator.userAgent.toLowerCase();
+                    var s;
+                    (s = ua.match(/msie ([\d.]+)/)) ? Sys.ie = s[1] :
+                        (s = ua.match(/firefox\/([\d.]+)/)) ? Sys.firefox = s[1] :
+                            (s = ua.match(/chrome\/([\d.]+)/)) ? Sys.chrome = s[1] :
+                                (s = ua.match(/opera.([\d.]+)/)) ? Sys.opera = s[1] :
+                                    (s = ua.match(/version\/([\d.]+).*safari/)) ? Sys.safari = s[1] : 0;
+                    if (Sys.firefox) {
+                        document.getElementById("div_load_cfg").style.display = "none";
+                        document.getElementById("div_remain_cfg").style.display = "none";
+
+                    } else if (Sys.chrome) {
+                        document.getElementById("div_load_cfg").style.display = "none";
+                        document.getElementById("div_remain_cfg").style.display = "none";
+                    }
+                }
+            }
+        function checkData() {
+            var cf = document.forms[3];
+            if (cf.upgrade_file.value.length == 0) {
+                alert(msg_nofile);
+                return false;
+            }
+
+            var file_name = cf.upgrade_file.value;
+            var bin_type = ".img";
+            var file_type = file_name.substr(file_name.length - bin_type.length);
+            if (file_type.toLowerCase() !== bin_type) {
+                alert(msg_errfiletype);
+                return false;
+            }
+
+            if (!confirm(msg_confirmUpgrade))
+                return false;
+            setDisabled(true, cf.upgrade);
+            return true;
+        }
+
+        function getvl_Upgrade(obj) {
+            var cfUpgrade = document.forms[3];
+            //判断浏览器
+            var Sys = {};
+            var ua = navigator.userAgent.toLowerCase();
+            var s;
+            (s = ua.match(/msie ([\d.]+)/)) ? Sys.ie = s[1] :
+                (s = ua.match(/firefox\/([\d.]+)/)) ? Sys.firefox = s[1] :
+                    (s = ua.match(/chrome\/([\d.]+)/)) ? Sys.chrome = s[1] :
+                        (s = ua.match(/opera.([\d.]+)/)) ? Sys.opera = s[1] :
+                            (s = ua.match(/version\/([\d.]+).*safari/)) ? Sys.safari = s[1] : 0;
+            var file_url = "";
+            if (Sys.ie <= "6.0") {
+                //ie5.5,ie6.0
+                file_url = obj.value;
+            } else if (Sys.ie >= "7.0") {
+                obj.select();
+                obj.blur();
+                file_url = document.selection.createRange().text;
+
+            } else if (Sys.firefox) {
+                //fx
+                //file_url = document.getElementById("file").files[0].getAsDataURL();//获取的路径为FF识别的加密字符串
+                //file_url = readFileFirefox(obj);
+                file_url = obj.value.replace("C:\\fakepath\\", "");
+            } else if (Sys.chrome) {
+
+                file_url = obj.value.replace("C:\\fakepath\\", "");
+            }
+            //alert(file_url);
+            //document.getElementById("text").innerHTML="获取文件域完整路径为："+file_url;
+            cfUpgrade.textfield.value = file_url;
+            //document.getElementById("textfield").value=file_url;
+        }
+
+        function getvl_Import(obj) {
+            var cfimport = document.forms[2];
+            //判断浏览器
+            var Sys = {};
+            var ua = navigator.userAgent.toLowerCase();
+            var s;
+            (s = ua.match(/msie ([\d.]+)/)) ? Sys.ie = s[1] :
+                (s = ua.match(/firefox\/([\d.]+)/)) ? Sys.firefox = s[1] :
+                    (s = ua.match(/chrome\/([\d.]+)/)) ? Sys.chrome = s[1] :
+                        (s = ua.match(/opera.([\d.]+)/)) ? Sys.opera = s[1] :
+                            (s = ua.match(/version\/([\d.]+).*safari/)) ? Sys.safari = s[1] : 0;
+            var file_url = "";
+            if (Sys.ie <= "6.0") {
+                //ie5.5,ie6.0
+                file_url = obj.value;
+            } else if (Sys.ie >= "7.0") {
+                obj.select();
+                obj.blur();
+                file_url = document.selection.createRange().text;
+
+            } else if (Sys.firefox) {
+                //fx
+                //file_url = document.getElementById("file").files[0].getAsDataURL();//获取的路径为FF识别的加密字符串
+                //file_url = readFileFirefox(obj);
+                file_url = obj.value.replace("C:\\fakepath\\", "");
+            } else if (Sys.chrome) {
+                file_url = obj.value.replace("C:\\fakepath\\", "");
+            }
+            //alert(file_url);
+            //document.getElementById("text").innerHTML="获取文件域完整路径为："+file_url;
+            cfimport.textfield_file.value = file_url;
+            //document.getElementById("textfield").value=file_url;
+        }
+
+        function submitoption() {
+            var cfRemain = document.forms[4];
+            var bit_maps = 0, i;
+            for (i = 0; i < 3; i++)
+                if (cfRemain.remain_conf[i].checked == true)
+                    bit_maps += 1 << i;
+            //alert(bit_maps);
+            cfRemain.remain_type.value = bit_maps;
+
+            dataToHidden(cfRemain);
+        }
+
+        function check_remain() {
+            if (document.getElementById("main").style.display == "none") {
+                document.getElementById("main").style.display = "";
+            }
+            else {
+                document.getElementById("main").style.display = "none";
+            }
+            if (document.getElementById("remain_color").style.bgcolor == "#ffffff") {
+                document.getElementById("remain_color").style.bgcolor = "#858894";
+            }
+            else {
+                document.getElementById("remain_color").style.bgcolor = "#ffffff";
+            }
+
+            var cfRemain = document.forms[4];
+            var remain_type = cfRemain.remain_type.value;
+            if (remain_type & (1 << 0))
+                cfRemain.remain_conf[0].checked = 1;
+            if (remain_type & (1 << 1))
+                cfRemain.remain_conf[1].checked = 1;
+            if (remain_type & (1 << 2))
+                cfRemain.remain_conf[2].checked = 1;
+        }
+
+        function check_import() {
+            if (document.forms['import'].upload_file.value.length == 0) {
+                alert(msg_nofile);
+                return false;
+            }
+
+            var file_name = document.forms['import'].upload_file.value;
+            var cfg_type = ".cfg";
+            var file_type = file_name.substr(file_name.length - cfg_type.length);
+            if (file_type.toLowerCase() !== cfg_type) {
+                alert(msg_errfiletype);
+                return false;
+            }
+
+            if (confirm(msg_confirmCfile))
+                return true;
+            else return false;
+        }
+
+        function Confirm() {
+            var cfDefault = document.forms[1];
+            var warning_str = addstr(msg_confirmDefault, cfDefault.device_defip.value);
+            if (cfDefault.remain_ip.checked == true)
+                cfDefault.default_remain_ip.value = "1"
+            else
+                cfDefault.default_remain_ip.value = "0"
+            return confirm(warning_str);
+        }
+
+        function ConfirmReboot() {
+            return confirm(msg_reboot);
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <table width="1002" border="0" align="center" cellspacing="0">
+        <tr>
+            <td>
+                <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                    <tr>
+                        <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                    </tr>
+                    <tr>
+                        <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+                            <a href="https://milkv.io/">
+                                <span class="showbtn3">网站</span>
+                            </a>
+                            <a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a
+                                href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span
+                                    class="showbtn5">&times;</span></a>
+                            <br>
+                            <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                </spen>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                    </tr>
+                    <tr>
+                        <table width="1002">
+                            <script language="JavaScript1.2">init_menu();</script>
+                        </table>
+                    </tr>
+                    <tr>
+                        <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    <table width="1004" border="0" align="center" cellspacing="0">
+        <tr>
+            <td height="25" colspan="9" align="right" valign="middle">
+                <table width="1002" border="0" cellspacing="0">
+                    <tr class="table_title">
+                        <td width="267" class="table_title"><strong
+                                class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                class="style4">系统管理</span><strong class="style4">&gt;&gt;</strong><span
+                                class="style3">文件管理</span></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+
+        <form name="reboot" method="POST" action="setup.cgi">
+            <tr class="table_enable">
+                <td width="1"></td>
+                <td width="18">&nbsp;</td>
+                <td colspan="3"><span class="style7">重启交换机</span></td>
+                <td width="338">&nbsp;</td>
+                <td width="235">&nbsp;</td>
+                <td width="180">&nbsp;</td>
+                <td width="1" class="table_enable"></td>
+            </tr>
+            <tr>
+                <td class="table_enable"></td>
+                <td class="table_right">&nbsp;</td>
+                <td width="24" align="right" valign="middle" class="table_right">&nbsp;</td>
+                <td width="91" align="left" valign="middle" class="table_right"><span class="style8">重启交换机:</span></td>
+                <td width="100" align="center" valign="middle" class="table_right"><input type="submit" class="showbtn7"
+                        name="reboot" value="重启" onClick="return ConfirmReboot();" /></td>
+                <td class="table_right">&nbsp;</td>
+                <td class="table_right">&nbsp;</td>
+                <td class="table_right">&nbsp;</td>
+                <td class="table_enable"></td>
+            </tr>
+            <input type="hidden" name="this_file" value="backup.html">
+            <input type="hidden" name="next_file" value="reboot.html">
+        </form>
+        <form name="defaultsettings" method="POST" action="setup.cgi">
+            <tr class="table_enable">
+                <td></td>
+                <td>&nbsp;</td>
+                <td colspan="3"><span class="style7">恢复出厂值</span></td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td align="center" valign="middle"> <input name="remain_ip" type="checkbox" checked="true" value="1" />
+                    保留当前静态IP配置&nbsp;&nbsp;&nbsp;</td>
+                <td class="table_enable"></td>
+            </tr>
+            <tr>
+                <td align="left" valign="bottom" class="table_enable"></td>
+                <td align="left" valign="bottom" class="table_right">&nbsp;</td>
+                <td align="right" valign="bottom" class="table_right"></td>
+                <td align="left" valign="bottom" class="table_right"><span class="style8">恢复出厂值:</span></td>
+                <td align="center" valign="middle" class="table_right"><input type="submit" class="showbtn7"
+                        name="restore" value="开始" onClick="return Confirm();" /></td>
+                <td align="left" valign="bottom" class="table_right">&nbsp;</td>
+                <td align="left" valign="bottom" class="table_right">&nbsp;</td>
+                <td align="left" valign="bottom" class="table_right">&nbsp;</td>
+                <td align="left" valign="bottom" class="table_enable"></td>
+            </tr>
+            <input type="hidden" name="todo" value="defaultsettings">
+            <input type="hidden" name="loader" value="@loader#">
+            <input type="hidden" name="this_file" value="backup.html">
+            <input type="hidden" name="next_file" value="reboot.html">
+            <input type="hidden" name="message" value="@msg_text#">
+            <input type="hidden" name="default_remain_ip" value="@default_remain_ip#">
+            <input type="hidden" name="device_defip" value="@device_defip#">
+        </form>
+        <tr class="table_enable">
+            <td></td>
+            <td>&nbsp;</td>
+            <td colspan="3"><span class="style7">配置文件</span></td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td align="center" valign="middle">
+                <div id="div_load_cfg"><a id="load_cfg" href="Switchcfg.cfg"><span class="showbtn8">下载配置文件</span></a>
+                </div>
+            </td>
+            <td class="table_enable"></td>
+        </tr>
+
+        <form name="import" method="POST" action="import.cgi" ENCTYPE="multipart/form-data">
+            <tr align="left" valign="top">
+                <td align="left" class="table_enable"> </td>
+                <td align="left" class="table_right"></td>
+                <td align="right" class="table_right"></td>
+                <td align="left" class="table_right"><span class="style8">上传配置文件:</span></td>
+                <td align="center" class="table_right"><input type="submit" class="showbtn7" name="upload" value="上传 "
+                        onClick="return check_import()" /></td>
+                <td align="left" valign="middle" class="table_right"><input type='text' name='textfield_file'
+                        style="width:300px; height:15px; background-color: #eeeeee;" id='textfield_file'
+                        class="showbtn8" /></td>
+                <td align="left" class="upfiles"><a id="upfile_name">
+                        <input type="file" name="upload_file" value="" class="upfile"
+                            onChange="getvl_Import(this)"><span>浏览... </span></a> </td>
+                <td align="left" class="table_right">&nbsp;</td>
+                <td align="left" class="table_enable"></td>
+            </tr>
+            <input type="hidden" name="this_file" value="@createcfg#">
+            <input type="hidden" name="this_file" value="backup.html">
+            <input type="hidden" name="next_file" value="reboot.html">
+            <input type="hidden" name="todo" value="restorefile">
+            <input type="hidden" name="message" value="@msg_text#">
+        </form>
+
+        <tr class="table_enable">
+            <td></td>
+            <td>&nbsp;</td>
+            <td colspan="3">系统升级</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td align="center" valign="middle">
+                <div id="div_remain_cfg">
+                    <!--a  onClick="check_remain()" id="remain_cfg"><span class="showbtn8" >是否保留当前其他配置?</span></a-->
+                    <!--<a id="remain_cfg"><input type="button" onClick="check_remain()" value="是否保留当前其它配置" class="showbtn8" ></a>
+				</div></td> -->
+            <td class="table_enable"></td>
+        </tr>
+
+        <form name="firmwareupgrade" method="POST" action="upgrade.cgi" enctype="multipart/form-data"
+            onSubmit=" return checkData();">
+            <tr>
+                <td align="left" valign="bottom" class="table_enable"> </td>
+                <td align="left" valign="bottom" class="table_right"><strong>&nbsp;</strong></td>
+                <td align="right" valign="bottom" class="table_right"></td>
+                <td align="left" valign="bottom" class="table_right"><span class="style8">选择升级文件:</span></td>
+                <td align="center" valign="middle" class="table_right"><input name="upgrade" value="开始升级" type="submit"
+                        class="showbtn7" /></td>
+                <td align="left" valign="bottom" class="table_right"><span class="upfiles">
+                        <input type='text' name='textfield' style="width:300px; height:15px; background-color: #eeeeee;"
+                            id='textfield_img' class="showbtn8" />
+                    </span></td>
+                <td align="left" valign="bottom" class="upfiles"><a id="upgrade_file_name"><input type="file"
+                            name="upgrade_file" value="" class="upfile"
+                            onChange="getvl_Upgrade(this)"><span>浏览...</span></a> </td>
+                <td align="left" valign="bottom" class="table_right">&nbsp;</td>
+                <td align="left" valign="bottom" class="table_enable"></td>
+            </tr>
+            <tr>
+                <td width="1" height="1" bgcolor="#858894"></td>
+                <td colspan="4" bgcolor="#858894"></td>
+                <td width="338" bgcolor="#858894"></td>
+                <td width="235" bgcolor="#858894"></td>
+                <td width="180" bgcolor="#858894"></td>
+                <td width="1" height="1" bgcolor="#858894"></td>
+            </tr>
+            <input type="hidden" name="todo" value="upgrade">
+            <input type="hidden" name="this_file" value="config.html">
+            <input type="hidden" name="message" value="@msg_text#">
+        </form>
+
+        <form name="remain" method="POST" action="setup.cgi">
+            <tr>
+                <td colspan="9" bgcolor="#ffffff" id="remain_color">
+                    <div align="center" id="main" style="display:none">
+                        <table id="remain" width="1002" border="0" align="center" cellspacing="0">
+                            <tr>
+                                <td width="1002" height="25" align="left" class="table_right">&nbsp;
+                                    <input name="remain_conf" type="checkbox" value="1" style="margin-bottom:0px" />
+                                    <span class="style8">保留当前快速环网配置</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="1002" height="25" align="left" class="table_right">&nbsp;
+                                    <input name="remain_conf" type="checkbox" value="2" style="margin-bottom:0px" />
+                                    <span class="style8">保留当前快速生成树配置</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="1002" height="25" align="left" class="table_right">&nbsp;
+                                    <input name="remain_conf" type="checkbox" value="4" style="margin-bottom:0px" />
+                                    <span class="style8">保留当前VLAN配置</span>
+                                </td>
+                            </tr>
+                            <tr align="left" valign="top">
+                                <td height="25" align="left" valign="top" style="padding-top:5px" class="table_right">
+                                    <span style="padding-top:0px">&nbsp;&nbsp;
+                                        <input type="Submit" name="Save" value="保存" onClick="return submitoption();"
+                                            class="showbtn7">&nbsp;
+                                        <input type="button" name="Cancel" value="取消"
+                                            onClick="location.href='setup.cgi?next_file=config.html'" class="showbtn7">
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            <input type="hidden" name="todo" value="save">
+            <input type="hidden" name="remain_type" value="@remain_type#">
+            <input type="hidden" name="this_file" value="config.html">
+            <input type="hidden" name="message" value="@msg_text#">
+        </form>
+    </table>
+</body>
+
+</html>

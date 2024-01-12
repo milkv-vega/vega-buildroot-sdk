@@ -1,0 +1,439 @@
+<!DOCTYPE html
+	PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+	<title>QoS</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		function init() {
+			var cf = document.forms[0];
+			var i = 0, n = 0;
+			var arrName = new Array();
+			var arrType = new Array();
+			var arrValue = new Array();
+			var arrText = new Array();
+			var arrClassName = new Array();
+
+			show_language_flag();
+			arrType = ["input", "input"];
+			arrName = ["qos_weight", "qos_dispatch"];
+			arrClassName = ["input_txt200", "input_txt3"];
+			arrWidth = ["25%", "15%"];
+			comCreateTableElementById(2, cf.port_bits.value, cf.g_port_bits.value, document.getElementById("qos_weight_list"), arrType, arrName, arrClassName, arrWidth);
+
+			arrType = ["select"];
+			arrName = ["qos_8021p"];
+			arrClassName = ["select1"];
+			arrWidth = ["15%"];
+			CreateTableElementByCount(4, 8, 0, document.getElementById("qos_8021p_list"), arrType, arrName, arrClassName, arrWidth);
+
+			arrType = ["select"];
+			arrName = ["qos_dscp"];
+			arrClassName = ["select1"];
+			arrWidth = ["15%"];
+			CreateTableElementByCount(4, 64, 0, document.getElementById("qos_dscp_list"), arrType, arrName, arrClassName, arrWidth);
+
+			arrText = ["The First queue", "The Second queue", "The Third queue", "The Fourth queue", "The Fifth queue", "The Sixth queue", "The Seventh queue", "The Fastest queue"];
+			arrValue = [0, 1, 2, 3, 4, 5, 6, 7];
+
+			comCreateTdElementById(document.getElementsByName("qos_8021p"), 0, document.getElementsByName("qos_8021p").length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+			comCreateTdElementById(document.getElementsByName("qos_dscp"), 0, document.getElementsByName("qos_dscp").length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+			for (i = 0; i < cf.switch_port.value; i++) {
+				cf.qos_weight[i].value = cf.qos_weight_config.value.split(";")[i];
+				cf.qos_dispatch[i].value = cf.qos_control_type.value.split(";")[i];
+			}
+
+			for (i = 0; i < 8; i++)
+				cf.qos_8021p[i].value = cf.qos_8021p_config.value.substring(i, i + 1);
+
+			for (i = 0; i < 64; i++)
+				cf.qos_dscp[i].value = cf.qos_dscp_config.value.substring(i, i + 1);
+
+
+			dataToVisible(cf);
+
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+			else
+				set_qos_enable();
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			var i;
+			setDisabled(true, cf.qos_enable[0], cf.qos_enable[1], cf.qos_8021p_enable[0], cf.qos_8021p_enable[1]);
+			setDisabled(true, cf.qos_dscp_enable[0], cf.qos_dscp_enable[1]);
+			setDisabled(true, cf.Save, cf.Cancel);
+
+			for (i = 0; i < cf.switch_port.value; i++) {
+				setDisabled(true, cf.qos_weight[i]);
+				setDisabled(true, cf.qos_dispatch[i]);
+			}
+
+			for (i = 0; i < 8; i++)
+				setDisabled(true, cf.qos_8021p[i]);
+
+			for (i = 0; i < 64; i++)
+				setDisabled(true, cf.qos_dscp[i]);
+		}
+
+		function set_qos_enable() {
+			var cf = document.forms[0];
+			var dflag = (getRadioCheckedValue(cf.qos_enable) == "disable");
+
+			if (dflag) {
+				cf.qos_8021p_enable[1].checked = true;
+				cf.qos_dscp_enable[1].checked = true;
+			}
+
+			setDisabled(dflag, cf.qos_8021p_enable[0], cf.qos_8021p_enable[1]);
+			setDisabled(dflag, cf.qos_dscp_enable[0], cf.qos_dscp_enable[1]);
+			set_qos_8021p();
+			set_qos_dscp();
+		}
+
+		function set_qos_8021p() {
+			var cf = document.forms[0];
+
+			var dflag = (getRadioCheckedValue(cf.qos_8021p_enable) == "disable");
+			var dflag1 = (getRadioCheckedValue(cf.qos_enable) == "disable");
+
+			if ((dflag == true) || (dflag1 == true))
+				dflag = true;
+
+			for (var i = 0; i < 8; i++)
+				setDisabled(dflag, cf.qos_8021p[i]);
+		}
+
+		function set_qos_dscp() {
+			var cf = document.forms[0];
+
+			var dflag = (getRadioCheckedValue(cf.qos_dscp_enable) == "disable");
+			var dflag1 = (getRadioCheckedValue(cf.qos_enable) == "disable");
+
+			if ((dflag == true) || (dflag1 == true))
+				dflag = true;
+
+			for (var i = 0; i < 64; i++)
+				setDisabled(dflag, cf.qos_dscp[i]);
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var i = 0, n = 0;
+			var msg = "";
+			var qos_Text = ["The First queue", "The Second queue", "The Third queue", "The Fourth queue", "The Fifth queue", "The Sixth queue", "The Seventh queue", "The Fastest queue"];
+			var qos_weight_str = "";
+			var qos_dispatch_str = "";
+			var port_map_array = cf.port_map.value.split(";");
+			cf.qos_8021p_config.value = "";
+			cf.qos_dscp_config.value = "";
+			cf.qos_weight_config.value = "";
+			cf.qos_control_type.value = "";
+
+			for (i = 0; i < cf.switch_port.value; i++) {
+				qos_weight_str = cf.qos_weight[i].value.split(":");
+
+				if (8 != qos_weight_str.length)
+					msg += addstr("Exception in setting port %s weight value\n", port_map_array[i]);
+				else
+					for (n = 0; n < 8; n++)
+						if (isNaN(qos_weight_str[n]))
+							msg += addstr("The weight value %s in port %s contains illegal characters.\n", port_map_array[i], qos_Text[n]);
+						else if (qos_weight_str[n] < 1 || qos_weight_str[n] > 255)
+							msg += addstr("Exception in setting the weight value %s range in port %s, valid range 1 ~ 255.\n", port_map_array[i], qos_Text[n]);
+
+				cf.qos_weight_config.value += cf.qos_weight[i].value + ";";
+
+
+				qos_dispatch_str = cf.qos_dispatch[i].value.split(":");
+
+				if (8 != qos_dispatch_str.length)
+					msg += addstr("Exception in setting port %s scheduling algorithm\n", port_map_array[i]);
+				else
+					for (n = 0; n < 8; n++)
+						if (isNaN(qos_dispatch_str[n]))
+							msg += addstr("The scheduling algorithm %s in port %s contains illegal characters.\n", port_map_array[i], qos_Text[n]);
+						else if (qos_dispatch_str[n] < 0 || qos_dispatch_str[n] > 1)
+							msg += addstr("Exception in setting the scheduling algorithm %s range in port %s, valid range 0 ~ 1.\n", port_map_array[i], qos_Text[n]);
+
+				cf.qos_control_type.value += cf.qos_dispatch[i].value + ";";
+			}
+
+			for (i = 0; i < 8; i++)
+				cf.qos_8021p_config.value += cf.qos_8021p[i].value;
+
+			for (i = 0; i < 64; i++)
+				cf.qos_dscp_config.value += cf.qos_dscp[i].value;
+
+			dataToHidden(cf);
+			return checkMsg(msg);
+		}
+
+	</script>
+</head>
+
+<body style="margin: 0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr class="table_title">
+							<td width="290" height="25"><strong class="style4">&nbsp;&nbsp;Current Page
+									&gt;&gt;</strong><span class="style4"> Link Layer </span><strong
+									class="style4">&gt;&gt;</strong><span class="style3"> QoS</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="left">
+					<table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+						<tr align="left" valign="top" class="table_enable">
+							<td height="25" width="150" valign="middle">&nbsp;&nbsp;QoS
+							</td>
+							<td height="25" align="left" valign="middle" colspan="9">&nbsp;<input type="radio"
+									name="qos_enable" value="enable" autocomplete="off" onClick="set_qos_enable()">
+								Enable &nbsp;
+								<input type="radio" name="qos_enable" value="disable" autocomplete="off"
+									onClick="set_qos_enable()">
+								Disable
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td height="25" colspan="2">
+					<table width="1002" border="0" cellpadding="0" cellspacing="1">
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;802.1p Priority</td>
+							<td height="25" class="table_right">&nbsp;
+								<input type="radio" name="qos_8021p_enable" value="enable" autocomplete="off"
+									onClick="set_qos_8021p()" />
+								Enable &nbsp;
+								<input type="radio" name="qos_8021p_enable" value="disable" autocomplete="off"
+									onClick="set_qos_8021p()" />
+								Disable
+							</td>
+						</tr>
+						<tr>
+							<td width="150" height="25" class="table_left">&nbsp;&nbsp;DSCP Priority
+							</td>
+							<td height="25" class="table_right">&nbsp;
+								<input type="radio" name="qos_dscp_enable" value="enable" autocomplete="off"
+									onClick="set_qos_dscp()" />
+								Enable &nbsp;
+								<input type="radio" name="qos_dscp_enable" value="disable" autocomplete="off"
+									onClick="set_qos_dscp()" />
+								Disable
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr class="table_title">
+				<td height="25" colspan="2">&nbsp;&nbsp;Qos Priority Configuration:</td>
+			</tr>
+			<tr>
+				<td height="25" colspan="2">
+					<table width="1002" border="0" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle" class="td11">
+								Port
+							</td>
+							<td width="25%" height="25" align="center" valign="middle" class="td11">
+								Priority Configuration
+							</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">
+								Scheduling algorithm(sp:0,wrr:1)
+							</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">
+								Port
+							</td>
+							<td width="25%" height="25" align="center" valign="middle" class="td11">
+								Priority Configuration
+							</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">
+								Scheduling algorithm(sp:0,wrr:1)
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr class="table_black">
+				<td height="25" colspan="2">
+					<table width="1002" border="0" id="qos_weight_list" cellpadding="0" cellspacing="1" height="53">
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr class="table_title">
+				<td height="25" colspan="2">&nbsp;&nbsp;802.1p Priority Configuration:</td>
+			</tr>
+			<tr>
+				<td height="25" colspan="2">
+					<table width="1002" border="0" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle" class="td11">
+								Priority
+							</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">
+								Priority queue
+							</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">
+								Priority
+							</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">
+								Priority queue
+							</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">
+								Priority
+							</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">
+								Priority queue
+							</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">
+								Priority
+							</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">
+								Priority queue
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr class="table_black">
+				<td height="25" colspan="2">
+					<table width="1002" border="0" id="qos_8021p_list" cellpadding="0" cellspacing="1" height="53">
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr class="table_title">
+				<td height="25" colspan="2">&nbsp;&nbsp;DSCP Priority Configuration:</td>
+			</tr>
+			<tr>
+				<td height="25" colspan="2">
+					<table width="1002" border="0" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle" class="td11">DSCP ID</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">Priority Queue</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">DSCP ID</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">Priority Queue</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">DSCP ID</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">Priority Queue</td>
+							<td width="10%" height="25" align="center" valign="middle" class="td11">DSCP ID</td>
+							<td width="15%" height="25" align="center" valign="middle" class="td11">Priority Queue</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="1002" border="0" id="qos_dscp_list" cellpadding="0" cellspacing="1"></table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow: hidden; background: #969594; height: 1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top: 5px"><span style="padding-top: 5px">
+						<input type="Submit" name="Save" value="Save" onClick="return checkData();"
+							class="showbtn6">&nbsp;
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=qos_en.html'" class="showbtn6"> </span>
+				</td>
+			</tr>
+		</table>
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="h_qos_enable" value="@h_qos_enable#">
+		<input type="hidden" name="h_qos_8021p_enable" value="@h_qos_8021p_enable#">
+		<input type="hidden" name="h_qos_dscp_enable" value="@h_qos_dscp_enable#">
+		<input type="hidden" name="qos_8021p_config" value="@qos_8021p_config#">
+		<input type="hidden" name="qos_dscp_config" value="@qos_dscp_config#">
+		<input type="hidden" name="qos_weight_config" value="@qos_weight_config#">
+		<input type="hidden" name="qos_control_type" value="@qos_control_type#">
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="qos_en.html">
+		<input type="hidden" name="next_file" value="qos_en.html">
+		<input type="hidden" name="message" value="@msg_text#">
+		<input type="hidden" name="switch_type" value="@switch_type#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="h_storm_enable" value="@h_storm_enable#">
+		<input type="hidden" name="ingress_policy" value="@ingress_policy#">
+		<input type="hidden" name="rd_code" value="@rd_code#">
+		<input type="hidden" name="port_map" value="@port_map#">
+	</form>
+</body>
+
+</html>

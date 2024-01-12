@@ -1,0 +1,648 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>LACP</title>
+	<style type="text/css">
+		.aa {
+			color: #CCCCCC
+		}
+	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		function xmlhttp_handle(info_str) {
+			var cf = document.forms[0];
+			var table = document.getElementById("lacp_info");
+			var rows = table.rows.length;
+			while (rows > 3) {
+				table.deleteRow(3);
+				rows--;
+			}
+
+			if (info_str === "") {
+				return;
+			}
+			var info = info_str.split(";");
+			for (var i = 0; i < info.length - 1; i++) {
+				var tmp = info[i].split(":");
+				var tr = table.insertRow(rows + i);
+				for (var j = 0; j < tmp.length; j++) {
+					if (cf.lacp_enable.value == "enable")
+						tr.insertCell(j).innerHTML = tmp[j];
+				}
+
+				tr.align = "center";
+
+				if (i % 2 === 0) {
+					tr.className = "table_right";
+				} else {
+					tr.className = "table_black";
+				}
+			}
+		}
+
+		function get_lacp_info(url) {
+			//�����첽GET����
+			//1 ����XHR
+			var xmlhttp = null;
+
+			if (window.XMLHttpRequest) {// code for IE7, Firefox, Opera, etc.
+				xmlhttp = new XMLHttpRequest();
+			}
+			else if (window.ActiveXObject) {// code for IE6, IE5
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+
+			if (xmlhttp !== null) {
+				//2 ����״̬�ı䣬������Ӧ������ɺ��ȡ��Ӧ����
+				xmlhttp.onreadystatechange = function () {
+					//readyState: 0 -> 1 -> 2 -> 3 -> 4
+					//console.log('XHR��״̬�ı��ˣ�'+xhr.readyState);
+					if (xmlhttp.readyState === 4) { //��Ӧ�������
+						if (xmlhttp.status === 200) {
+							xmlhttp_handle(xmlhttp.responseText);  //������Ӧ��Ϣ
+						} else {
+							info_str = "";
+							//                    alert("get lacp info failed");
+						}
+					}
+				};
+
+				//3 ������
+				xmlhttp.open("GET", url, true);
+				xmlhttp.setRequestHeader("If-Modified-Since", "0");
+				//4 ��������
+				xmlhttp.send(null);
+			}
+			else {
+				alert("Your browser does not support XMLHTTP.");
+			}
+
+		}
+
+		function update_info() {
+			var cf = document.forms[0];
+			cf.todo.value = "lacp_info";
+		}
+
+		function init() {
+
+			var cf = document.forms[0];
+			var t = 0, i = 0, j = 0;
+			var arrName = new Array();
+			var arrText = new Array(), arrValue = new Array();
+			var objgroup = document.getElementById("lacp_group_list");
+			var objport = document.getElementById("lacp_port_list");
+			var arrType = new Array(), arrClassName = new Array(), arrInputType = new Array(), arrWide = new Array();
+			var lacp_port_pro = new Array();
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var lacp_param = cf.lacp_port_cfg.value.split(";");
+			var lacp_group = cf.lacp_group_cfg.value.split(";");
+			var total_ports = cf.switch_port.value;
+
+			show_language_flag();
+			for (t = 0; t < 4; t++) {
+
+				if (t == 0) {
+					arrName[t] = "sys_group";
+					arrWide[t] = "22.5%";
+					arrType[t] = "select";
+					arrClassName[t] = "select1";
+					arrInputType[t] = "";
+				}
+				else if (t == 1) {
+					arrName[t] = "time_out";
+					arrWide[t] = "22.5%";
+					arrType[t] = "select";
+					arrClassName[t] = "select1";
+					arrInputType[t] = "";
+				}
+				else if (t == 2) {
+					arrName[t] = "slb_algo";
+					arrWide[t] = "22.5%";
+					arrType[t] = "select";
+					arrClassName[t] = "select1";
+					arrInputType[t] = "";
+				}
+				else if (t == 3) {
+					arrName[t] = "group_enable";
+					arrWide[t] = "22.5%";
+					arrType[t] = "input";
+					arrClassName[t] = "";
+					arrInputType[t] = "checkbox";
+				}
+			}
+
+			// comCreateTableElementById(1, 15, 0, objgroup, arrType, arrName, arrClassName, arrWide, arrInputType);
+			CreateTableElementByCount(1, 4, 1, objgroup, arrType, arrName, arrClassName, arrWide, arrInputType);
+			arrText = [1, 2, 3, 4, 5, 6, 7, 8];
+			arrValue = [1, 2, 3, 4, 5, 6, 7, 8];
+			comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+			arrText = ["Long Timeout", "Short Timeout"];
+			arrValue = [0, 1];
+			comCreateTdElementById(document.getElementsByName(arrName[1]), 0, document.getElementsByName(arrName[1]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+			arrText = ["src-mac", "dst-mac", "src-dst-mac", "src-ip", "dst-ip", "src-dst-ip"];
+			arrValue = [1, 2, 3, 4096, 8192, 12288];
+			comCreateTdElementById(document.getElementsByName(arrName[2]), 0, document.getElementsByName(arrName[2]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+			for (i = 0; i < 4; i++) {
+				cf.sys_group[i].value = lacp_group[i].split(":")[0];
+				cf.time_out[i].value = lacp_group[i].split(":")[1];
+				cf.slb_algo[i].value = lacp_group[i].split(":")[2];
+				cf.group_enable[i].checked = (lacp_group[i].split(":")[3] == 1 ? true : false);
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[3]), 0, document.getElementsByName(arrName[3]).length - 1, 1, undefined, undefined, "set_lacp_group_enable()");
+
+			for (t = 0; t < 4; t++) {
+
+				if (t == 0) {
+					arrName[t] = "port_group";
+					arrWide[t] = "22.5%";
+					arrType[t] = "select";
+					arrInputType[t] = "";
+					arrClassName[t] = "select";
+				}
+				else if (t == 1) {
+					arrName[t] = "port_mode";
+					arrWide[t] = "22.5%";
+					arrType[t] = "select";
+					arrInputType[t] = "";
+					arrClassName[t] = "select";
+				}
+				else if (t == 2) {
+					arrType[t] = "input";
+					arrWide[t] = "22.5%";
+					arrName[t] = "port_priority";
+					arrInputType[t] = "";
+					arrClassName[t] = "input_txt";
+				}
+				else if (t == 3) {
+					arrName[t] = "port_enable";
+					arrWide[t] = "22.5%";
+					arrType[t] = "input";
+					arrClassName[t] = "";
+					arrInputType[t] = "checkbox";
+				}
+			}
+			comCreateTableElementById(1, ports, gPorts, objport, arrType, arrName, arrClassName, arrWide, arrInputType);
+
+
+			arrText = [1, 2, 3, 4, 5, 6, 7, 8];
+			arrValue = [1, 2, 3, 4, 5, 6, 7, 8];
+			comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+			arrText = ["passive", "active"];
+			arrValue = [0, 1];
+			comCreateTdElementById(document.getElementsByName(arrName[1]), 0, document.getElementsByName(arrName[1]).length - 1, 2, undefined, "set_lacp_port_mode()", undefined, arrValue, arrText);
+
+			for (i = 0; i < total_ports; i++) {
+				cf.port_group[i].value = lacp_param[i].split(":")[1];
+				cf.port_mode[i].value = lacp_param[i].split(":")[3];
+				lacp_port_pro[i] = lacp_param[i].split(":")[4];
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[2]), 0, document.getElementsByName(arrName[2]).length - 1, 6, undefined, undefined, undefined, undefined, lacp_port_pro);
+
+			for (i = 0; i < total_ports; i++) {
+				cf.port_enable[i].checked = (lacp_param[i].split(":")[2] == 1 ? true : false);
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[3]), 0, document.getElementsByName(arrName[3]).length - 1, 1, undefined, undefined, "set_lacp_port_enable()");
+
+			cf.lacp_enable.value = (cf.h_lacp_enable.value == 1 ? "enable" : "disable");
+			cf.lacp_priority.value = cf.lacp_sys_priority.value;
+			set_lacp_enable();
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+
+			get_lacp_info('tmp/tmp_lacp.xml');
+		}
+
+
+		function set_lacp_enable() {
+			var cf = document.forms[0];
+			if (cf.lacp_enable.value == "disable") {
+				var i = 0;
+				setDisabled(true, cf.lacp_priority, cf.update);
+				for (i = 0; i < cf.port_enable.length; i++) {
+					if (i < 4)
+						setDisabled(true, cf.sys_group[i], cf.time_out[i], cf.slb_algo[i], cf.group_enable[i]);
+					setDisabled(true, cf.port_enable[i], cf.port_group[i], cf.port_mode[i], cf.port_priority[i]);
+				}
+			}
+			else {
+				setDisabled(false, cf.lacp_priority, cf.update);
+				set_lacp_port_enable();
+				set_lacp_group_enable();
+			}
+		}
+
+		function set_lacp_port_enable() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			for (i = 0; i < cf.port_enable.length; i++) {
+				if (cf.port_enable[i].checked == false)
+					setDisabled(true, cf.port_group[i], cf.port_mode[i], cf.port_priority[i]);
+				else
+					setDisabled(false, cf.port_group[i], cf.port_mode[i], cf.port_priority[i]);
+				setDisabled(false, cf.port_enable[i]);
+			}
+
+		}
+
+		function set_lacp_group_enable() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			for (i = 0; i < cf.group_enable.length; i++) {
+				if (cf.group_enable[i].checked == false)
+					setDisabled(true, cf.sys_group[i], cf.time_out[i], cf.slb_algo[i]);
+				else
+					setDisabled(false, cf.sys_group[i], cf.time_out[i], cf.slb_algo[i]);
+				setDisabled(false, cf.group_enable[i]);
+			}
+
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			var i = 0;
+			setDisabled(true, cf.Save, cf.Cancel, cf.lacp_priority, cf.update);
+			for (i = 0; i < cf.port_enable.length; i++) {
+				if (i < 4)
+					setDisabled(true, cf.sys_group[i], cf.time_out[i], cf.slb_algo[i], cf.group_enable[i]);
+				setDisabled(true, cf.port_enable[i], cf.port_group[i], cf.port_mode[i], cf.port_priority[i]);
+			}
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var msg = "";
+			var i = 0, j = 0;
+			var port_maps = new Array();
+			var group_cfg = "", port_cfg = "";
+			var logic = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+			var arrTrunkConfig = cf.trunk_setting.value.split(";");
+			var vlan_lag_set = cf.vlan_lag_port_set.value.split(";");
+			var port_map_array = cf.port_map.value.split(";");
+
+			msg += checkInt(cf.lacp_priority, "System priority", 1, 65535, true);
+			msg += checkInt(cf.port_priority[i], "Port" + (i + 1) + " priority", 1, 65535, true);
+
+			for (i = 0; i < cf.port_enable.length; i++) {
+				if (cf.port_enable[i].checked == true)//lacp_port is enable
+					port_maps[i] |= 1 << i;
+			}
+
+			if (cf.lacp_enable.value == "enable" && cf.h_trunk_enable.value == "enable") {
+				msg += msg_lacp_disable_trunk;
+			}
+			else if (cf.lacp_enable.value == "enable") {
+
+				for (i = 0; i < cf.group_enable.length; i++) {
+					group_cfg += cf.sys_group[i].value + ":" + cf.time_out[i].value + ":" + cf.slb_algo[i].value + ":" + (cf.group_enable[i].checked == true ? 1 : 0) + ";";
+					if (cf.group_enable[i].checked == true) {
+						logic[cf.sys_group[i].value] = 1;
+
+						if (cf.h_trunk_enable == "enable") {
+							for (j = 0; j < arrTrunkConfig.length - 1; j++) {
+								if (arrTrunkConfig[j].split(":")[1] == 1 && cf.sys_group[i].value == (j + 1))
+									msg += addstr(msg_lacp_disable_trunk_group, cf.sys_group[i].value);
+							}
+						}
+						for (j = i + 1; j < cf.group_enable.length; j++) {
+							if ((cf.group_enable[j].checked == true) && (cf.sys_group[i].value == cf.sys_group[j].value)) {
+								msg += addstr(msg_lacp_duplicate_trunk_group, i, j);
+								break;
+							}
+						}
+						if (0 == vlan_lag_set[cf.sys_group[i].value - 1].split(":")[4])
+							vlan_lag_set[cf.sys_group[i].value - 1] = "1:0:1:1" + ":" + cf.sys_group[i].value;
+					}
+					else {
+						if (!(cf.h_trunk_enable.value == "enable" && arrTrunkConfig[cf.sys_group[i].value - 1].split(":")[1] != 1))
+							vlan_lag_set[cf.sys_group[i].value - 1] = "1:0:1:1:0";
+					}
+				}
+
+				for (i = 0; i < cf.port_enable.length; i++) {
+					// <!-- �������Ƕ˿ڼ��Ļ��� -->
+					if (cf.port_enable[i].checked == true) {
+						j = cf.port_group[i].value;
+						if (logic[j] == 0) {
+							msg += addstr(msg_lacp_disable_lacp_group, port_map_array[i], j);
+							break;
+						}
+
+						var arrPortState = cf.port_status.value.split(";");
+						for (j = 0; j < arrPortState.length - 1; j++) {
+							if (arrPortState[j].substring(2, 3) == "0")//port is disable
+							{
+								if ((port_maps[i] >> j) & 1) {
+									msg += addstr(msg_lacp_disable_speed, port_map_array[i]);
+									break;
+								}
+							}
+						}
+
+						if (cf.h_rstp_enable.value == 'enable')//rstp is enable
+						{
+							var arrRstpConfig = cf.rstp_setting.value.split(";");
+							var arrItem;
+
+							for (j = 0; j < arrRstpConfig.length - 1; j++) {
+								arrItem = arrRstpConfig[j].split(':');
+
+								if (arrItem[4] == '0')// the port participates in the RSTP
+								{
+									if (port_maps[i] & (1 << j)) {
+										msg += addstr(msg_lacp_disable_rstp, port_map_array[i]);
+										break;
+									}
+								}
+							}
+						}
+
+
+						if (cf.h_erps_enable.value == 'enable')//erps is running
+						{
+							var erps_ring_cfg = cf.erps_ring_config.value.split(";");
+							var erps_node_cfg = cf.erps_node_config.value.split(";");
+							for (j = 0; j < erps_ring_cfg.length - 1; j++) {
+								var single_ring_cfg = erps_ring_cfg[j].split(":");
+								var single_node_cfg = erps_node_cfg[j].split(":");
+								if (single_ring_cfg[0] == "1") {
+									if ((parseInt(single_node_cfg[0]) & port_maps[i]) || (parseInt(single_node_cfg[1]) & port_maps[i])) {
+										msg += addstr(msg_lacp_disable_erps, port_map_array[i]);
+										break;
+									}
+								}
+							}
+						}
+
+
+						if (cf.h_trunk_enable.value == 'enable')//trunk is enable
+						{
+							var arrTrunkConfig = cf.trunk_setting.value.split(";");
+							var arrItem;
+
+							for (j = 0; j < arrTrunkConfig.length - 1; j++) {
+								arrItem = arrTrunkConfig[j].split(':');
+
+								if (arrItem[1] == '1') {
+									if ((arrItem[0] >> i) & 1) {
+										msg += addstr(msg_lacp_disable_trunk_port, port_map_array[i]);
+										break;
+									}
+								}
+							}
+						}
+
+						if (cf.h_mirror_enable.value == 'enable') {
+							if ((port_maps[i] >> parseInt(cf.h_capture_port.value)) & 1) {
+								msg += addstr(msg_lacp_disable_mirror, port_map_array[i]);
+							}
+						}
+
+					}
+					port_cfg += (i + 1) + ":" + cf.port_group[i].value + ":" + (cf.port_enable[i].checked == true ? 1 : 0) + ":" + cf.port_mode[i].value + ":" + cf.port_priority[i].value + ";";
+				}
+			}
+			else {
+				for (i = 0; i < cf.group_enable.length; i++) {
+					if (!(cf.h_trunk_enable.value == "enable" && arrTrunkConfig[cf.sys_group[i].value - 1].split(":")[1] == 1))
+						vlan_lag_set[cf.sys_group[i].value - 1] = "1:0:1:1:0";
+				}
+			}
+
+			if (msg == "") {
+				cf.vlan_lag_port_set.value = "";
+				cf.h_lacp_enable.value = (cf.lacp_enable.value == "enable" ? "1" : "0");
+				cf.lacp_sys_priority.value = cf.lacp_priority.value;
+				if (port_cfg)
+					cf.lacp_port_cfg.value = port_cfg;
+				if (group_cfg)
+					cf.lacp_group_cfg.value = group_cfg;
+				for (i = 0; i < vlan_lag_set.length - 1; i++)
+					cf.vlan_lag_port_set.value += vlan_lag_set[i] + ";";
+			}
+			return checkMsg(msg);
+		}
+		//-->
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current Page
+									&gt;&gt;</strong><span class="style4"> Link Backup </span><strong
+									class="style4">&gt;&gt;</strong><span class="style3">LACP</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+
+			<tr align="left" valign="top">
+				<td height="30" align="left">
+					<table width="1001" height="30" align="center" cellpadding="0" cellspacing="1">
+						<tr align="left" valign="top" class="table_enable">
+							<td height="30" width="150" valign="middle">&nbsp;&nbsp;LACP</td>
+							<td height="30" align="left" valign="middle" colspan="9">&nbsp;
+								<input type="radio" name="lacp_enable" value="enable" autocomplete="off"
+									onClick="set_lacp_enable()">
+								Enable
+								&nbsp;
+								<input type="radio" name="lacp_enable" value="disable" autocomplete="off"
+									onClick="set_lacp_enable()">
+								Disable
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="left">
+					<table width="1001" height="25" align="center" cellpadding="0" cellspacing="1">
+						<tr align="left" valign="top" class="table_left">
+							<td height="25" width="150" valign="middle">&nbsp;&nbsp;"System Priority"</td>
+							<td height="25" align="left" valign="middle" colspan="9">&nbsp;
+								<input type="input" name="lacp_priority">&nbsp;(Priority range:1-65535)
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">SN</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Trunk Group ID</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Timeout Type</td>
+							<td width="22.5%" height="25" align="center" valign="middle">IBLA</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Trunk Group Enable</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="12.5">
+					<table id="lacp_group_list" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">Port</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Trunk Group ID</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Port Lacp Mode</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Port Priority(Priority
+								Range:1-65535)</td>
+							<td width="22.5%" height="25" align="center" valign="middle">Port Enable</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="12.5">
+					<table id="lacp_port_list" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="12.5" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="Submit" name="save" value="Submit" onClick="return checkData();"
+							class="showbtn6">&nbsp;
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=lacp_en.html'" class="showbtn6">
+					</span>
+				</td>
+			</tr>
+		</table>
+
+
+		<table width="1002" border="0" align="center" cellspacing="1" id="lacp_info">
+			<tr>
+				<td width="1001" colspan="13">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+
+			<tr align="left" valign="middle" class="table_enable">
+				<td colspan="13">&nbsp;&nbsp;LACP Link Information</td>
+			</tr>
+
+			<tr align="center" valign="top" class="table_enable">
+				<td>Trunk Group ID</td>
+				<td>State</td>
+				<td>Member Port</td>
+				<td>Active Port</td>
+			</tr>
+
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="1">
+			<tr align="center" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px" colspan="13">
+					<span style="padding-top:5px">
+						<input type="Submit" name="update" value="Refresh" onclick="update_info()"
+							class="showbtn6">&nbsp;
+					</span>
+				</td>
+			</tr>
+		</table>
+
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+		<input type="hidden" name="lacp_sys_priority" value="@lacp_sys_priority#">
+		<input type="hidden" name="lacp_group_cfg" value="@lacp_group_cfg#">
+		<input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="switch_port" value="@switch_port#">
+		<input type="hidden" name="loader" value="admin">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="lacp_en.html">
+		<input type="hidden" name="next_file" value="lacp_en.html">
+		<input type="hidden" name="message" value="@msg_text#">
+		<input type="hidden" name="h_erps_enable" value="@h_erps_enable#">
+		<input type="hidden" name="erps_node_config" value="@erps_node_config#">
+		<input type="hidden" name="erps_ring_config" value="@erps_ring_config#">
+		<input type="hidden" name="rstp_setting" value="@rstp_setting#">
+		<input type="hidden" name="h_rstp_enable" value="@h_rstp_enable#">
+		<input type="hidden" name="trunk_setting" value="@trunk_setting#">
+		<input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+		<input type="hidden" name="h_mirror_enable" value="@h_mirror_enable#">
+		<input type="hidden" name="mirror_ports" value="@mirror_ports#">
+		<input type="hidden" name="h_capture_port" value="@h_capture_port#">
+		<input type="hidden" name="port_status" value="@port_status#">
+		<input type="hidden" name="vlan_lag_port_set" value="@vlan_lag_port_set#">
+		<input type="hidden" name="port_map" value="@port_map#">
+	</form>
+</body>
+
+</html>

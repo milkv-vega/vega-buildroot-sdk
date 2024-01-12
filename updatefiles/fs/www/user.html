@@ -1,0 +1,298 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>用户密码</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        < !-
+            //禁止用回车键
+            document.onkeydown=function(e) {
+                var keycode = document.all ? event.keyCode : e.which;
+                if (keycode == 13) {
+                    return false;
+                }
+            }
+
+        var passwordChanged = false;
+        var original_user = "";
+
+        function loaduser() {
+            var cf = document.forms[0];
+            cf.todo.value = "loaduser";
+            dataToHidden(cf);
+            cf.submit();
+        }
+
+        function init() {
+            var cf = document.forms[0];
+            dataToVisible(cf);
+
+            if (isBlank(cf.sysname.value) == false) {
+                cf.sysPasswd.value = "********";
+                cf.sysConfirmPasswd.value = "########";
+            }
+
+            if (cf.h_user_list.value == "1")
+                setDisabled(true, cf.access_level);
+            else
+                setDisabled(false, cf.access_level);
+
+            if (cf.h_access_level.value == "0")
+                cf.div_del.style.display = "";
+            else
+                cf.div_del.style.display = "none";
+
+            original_user = cf.sysname.value;
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.user_list, cf.access_level);
+            setDisabled(true, cf.sysname, cf.sysPasswd, cf.sysConfirmPasswd);
+            setDisabled(true, cf.Save, cf.Cancel);
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "";
+            var result = new Array();
+            var temp = new Array();
+            var i;
+            var hassamename = false;
+
+            if (cf.h_user_list.value == "1") {
+                if ((isBlank(cf.sysname.value) == true) || (isBlank(cf.sysPasswd.value) == true))
+                    msg += msg_noadmin_Passwd;
+            }
+
+            if (cf.sysname.value == null || isIllegaluser(cf.sysname.value) == false)
+                msg += addstr(msg_user_name, msg_name);
+
+            result = cf.user.value.split(";");
+            for (i = 0; i < result.length - 1; i++) {
+                temp = result[i].split(":");
+                if ((temp[0] == cf.sysname.value) && (i != (parseInt(cf.h_user_list.value) - 1)))
+                    hassamename = true;
+            }
+            if (cf.sysname.value == "")
+                msg += msg_nousername;
+            else if (hassamename == true)
+                msg += msg_samename;
+
+            if (isBlank(cf.sysname.value) != true) {
+                if (passwordChanged) {
+                    if (isIllegalpassword(cf.sysPasswd.value) == false)
+                        msg += msg_user_password;
+
+                    //if(isIllegaluser(cf.sysConfirmPasswd.value) == false)
+                    //    msg += addstr(msg_user_name, msg_ConfirmPasswd);
+                }
+            } else {
+                cf.sysPasswd.value = "";
+                cf.sysConfirmPasswd.value = "";
+            }
+
+            if (passwordChanged) {
+                cf.pwchanged.value = "yes";
+                if (cf.sysPasswd.value != cf.sysConfirmPasswd.value) {
+                    msg += msg_nosame_Passwd;
+                    cf.sysPasswd.value = "";
+                    cf.sysConfirmPasswd.value = "";
+                }
+            }
+            else
+                cf.pwchanged.value = "no";
+
+            dataToHidden(cf);
+            if (checkMsg(msg) == true) {
+                if (cf.cur_login.value == "yes")
+                    if (cf.h_user_list.value == "1" || cf.h_user_list.value == "2" || cf.h_user_list.value == "3") {
+                        if (original_user != cf.sysname.value || passwordChanged)
+                            alert(msg_relogin);
+                    }
+                return true;
+            } else
+                return false;
+        }
+
+        function Del_user() {
+            var cf = document.forms[0];
+            var result = new Array();
+            var i, temp;
+            var flag_null, flag;
+
+            flag_null = false;
+            result = cf.user.value.split(";");
+            for (i = 0; i < result.length - 1; i++) {
+                temp = result[i].split(":");
+                if (i == (parseInt(cf.h_user_list.value) - 1)) {
+                    if ((temp[0] == "") && (temp[1] == ""))
+                        flag_null = true;
+                }
+            }
+            if (flag_null) {
+                alert("空用户，无法删除!\n")
+                return false;
+            }
+            else {
+                flag = confirm("警告!当前操作将删除该用户，点击'确认' 继续，点击'取消' 将停止操作\n");
+                if (!flag)
+                    return checkMsg("当前操作已取消\n");
+            }
+            cf.sysname.value = "";
+            cf.pwchanged.value = "yes";
+            cf.sysPasswd.value = "";
+            return true;
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+                                <a href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span
+                                        class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">访问控制</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">用户密码</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;用户索引</td>
+                            <td class="table_right" colspan="2">&nbsp;
+                                <select name="user_list" size="1" class="select_email" onchange="loaduser()">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;访问等级</td>
+                            <td class="table_right">&nbsp;
+                                <select name="access_level" size="1" class="select_email"
+                                    onchange="passwordChanged=true">
+                                    <option value="0">观察员</option>
+                                    <option value="1">管理员</option>
+                                </select>
+                            </td>
+                            <td class="table_right" width="750">&nbsp;<input type="Submit" name="div_del" value="用户删除"
+                                    class="showbtn7" onclick="return Del_user();" /></td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;用户名</td>
+                            <td class="table_right" colspan="2">&nbsp;
+                                <input name="sysname" type="text" onchange="passwordChanged=true" value="@sysname#"
+                                    maxlength="16" class="input_user" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;输入密码</td>
+                            <td class="table_right" colspan="2">&nbsp;
+                                <input name="sysPasswd" type="password" onchange="passwordChanged=true" value=""
+                                    maxlength="16" class="input_user" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;确认密码</td>
+                            <td class="table_right" colspan="2">&nbsp;
+                                <input name="sysConfirmPasswd" type="password" onchange="passwordChanged=true" value=""
+                                    maxlength="16" class="input_user" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="配置" onClick="return checkData();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="取消"
+                            onClick="location.href='setup.cgi?next_file=user.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="h_user_list" value="@h_user_list#">
+        <input type="hidden" name="h_access_level" value="@h_access_level#">
+        <input type="hidden" name="cur_login" value="@cur_login#">
+        <input type="hidden" name="pwchanged" value="">
+        <input type="hidden" name="user" value="@user#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="user.html">
+        <input type="hidden" name="next_file" value="user.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+    </form>
+</body>
+
+</html>

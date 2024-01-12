@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+  <title>设备地址</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+  <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+  <!--[if lte IE 6]>
+<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+<![endif]-->
+  <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+  <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+  <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+  <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+  <script language="JavaScript">
+    < !-
+      function init() {
+        var cf = document.forms[0];
+        dataToVisible(cf);
+
+        if (cf.loader.value == "admin")
+          setIP();
+        else
+          disable_all_intput();
+      }
+
+    function setIP() {
+      var cf = document.forms[0];
+      var dflage = (getRadioCheckedValue(cf.bridged_dhcpenable) == "dhcp");
+
+      setDisabled(dflage, cf.lan_ip);
+      setDisabled(dflage, cf.lan_mask);
+      setDisabled(dflage, cf.lan_gw);
+      setDisabled(dflage, cf.lan_dns);
+    }
+
+    function disable_all_intput() {
+      var cf = document.forms[0];
+
+      setDisabled(true, cf.bridged_dhcpenable[0], cf.bridged_dhcpenable[1]);
+      setDisabled(true, cf.lan_ip, cf.lan_mask, cf.lan_gw, cf.lan_dns);
+      setDisabled(true, cf.Save, cf.Cancel);
+    }
+
+    function checkData() {
+      var cf = document.forms[0];
+      var msg = "";
+
+      var iptype = getRadioCheckedValue(cf.bridged_dhcpenable);
+
+      if (iptype == "fixedip") {
+        if (check_uni_ip(cf.lan_ip) == false)
+          msg += addstr(msg_invalid, msg_ip);
+
+        if (check_mask(cf.lan_mask) == false)
+          msg += addstr(msg_invalid, msg_mask);
+
+        if (check_ip(cf.lan_gw) == false)
+          msg += addstr(msg_invalid, msg_gw);
+
+        if (!isBlank(cf.lan_dns.value))
+          if (check_ip(cf.lan_dns) == false)
+            msg += addstr(msg_invalid, msg_dns);
+
+        var new_ip = cf.lan_ip.value.split(".");
+        var new_mask = cf.lan_mask.value.split(".");
+        var new_gw = cf.lan_gw.value.split(".");
+
+        for (var i = 0; i < 4; i++) {
+          if ((new_gw[i] & new_mask[i]) != (new_ip[i] & new_mask[i])) {
+            alert(addstr(msg_ip_gw_mismatch, cf.lan_ip.value, cf.lan_gw.value));
+            return false;
+          }
+        }
+      }
+
+      if (msg.length > 1) {
+        alert(msg);
+        return false;
+      }
+
+      if (iptype == "fixedip") {
+        if (isBlank(cf.lan_dns.value))
+          alert(msg_dns);
+      }
+
+      dataToHidden(cf);
+      return true;
+    }
+
+    //-->
+  </script>
+</head>
+
+<body style="margin:0" onLoad="init();">
+  <form method="POST" action="setup.cgi">
+    <table width="1002" border="0" align="center" cellspacing="0">
+      <tr>
+        <td>
+          <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+            <tr>
+              <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+            </tr>
+            <tr>
+              <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+              <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+                <a href="https://milkv.io/">
+                  <span class="showbtn3">网站</span>
+                </a>
+                <a href="./setup.cgi?todo=changeLanguage"><span class="showbtn4">English</span></a><a
+                  href="./setup.cgi?todo=logout"><span class="showbtn3">退出</span><span
+                    class="showbtn5">&times;</span></a>
+                <br>
+                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                  </spen>
+              </td>
+            </tr>
+            <tr>
+              <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+            </tr>
+            <tr>
+              <table width="1002">
+                <script language="JavaScript1.2">init_menu();</script>
+              </table>
+            </tr>
+            <tr>
+              <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table width="1002" border="0" align="center" cellspacing="0">
+      <tr>
+        <td height="25" align="left" valign="middle">
+          <table width="1002" border="0" cellspacing="0">
+            <tr>
+              <td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                  class="style4">系统管理</span><strong class="style4">&gt;&gt;</strong><span class="style3">设备地址</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr align="left" valign="top">
+        <td height="25" align="left">
+          <table width="1002" height="25" align="center" cellspacing="1" cellpadding="0">
+            <tr align="left" valign="top" class="table_enable">
+              <td height="25" width="150" valign="middle">&nbsp;&nbsp;设备地址</td>
+              <td height="25" colspan="9" align="left" valign="middle">&nbsp;
+                <input type="radio" name="bridged_dhcpenable" value="dhcp" autocomplete="off" onClick="setIP();" />
+                DHCP动态IP地址
+                &nbsp;
+                <input type="radio" name="bridged_dhcpenable" value="fixedip" autocomplete="off" onClick="setIP();" />
+                静态IP地址
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr height="8">
+        <td width="1001">
+          <div style="overflow:hidden;background:#969594;height:1px;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <table width="1002" border="0" cellspacing="1" cellpadding="0">
+            <tr>
+              <td width="150" height="25" class="table_left">&nbsp;&nbsp;IP地址</td>
+              <td class="table_right">&nbsp;
+                <input type="text" class="input_user" maxlength="15" name="lan_ip" value="@lan_ip#" />
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;&nbsp;子网掩码</td>
+              <td class="table_right">&nbsp;
+                <input type="text" class="input_user" maxlength="15" name="lan_mask" value="@lan_mask#" />
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;&nbsp;默认网关</td>
+              <td class="table_right">&nbsp;
+                <input type="text" class="input_user" maxlength="15" name="lan_gw" value="@lan_gw#" />
+              </td>
+            </tr>
+            <tr>
+              <td height="25" class="table_left">&nbsp;&nbsp;DNS地址</td>
+              <td class="table_right">&nbsp;
+                <input type="text" class="input_user" maxlength="15" name="lan_dns" value="@lan_dns#" />
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr height="8">
+        <td width="1001">
+          <div style="overflow:hidden;background:#969594;height:1px;"></div>
+        </td>
+      </tr>
+      <tr align="left" valign="top">
+        <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+            <input type="Submit" name="Save" value="配置" onClick="return checkData();" class="showbtn6">&nbsp;
+            <input type="button" name="Cancel" value="取消" onClick="location.href='setup.cgi?next_file=ip.html'"
+              class="showbtn6">
+          </span></td>
+      </tr>
+    </table>
+    </td>
+    </tr>
+    </table>
+    <input name="h_bridged_dhcpenable" value="@h_bridged_dhcpenable#" type="hidden">
+    <input name="loader" value="@loader#" type="hidden">
+    <input type="hidden" name="todo" value="save">
+    <input type="hidden" name="this_file" value="ip_addr.html">
+    <input type="hidden" name="next_file" value="reboot.html">
+    <input type="hidden" name="message" value="@msg_text#">
+    <input type="hidden" name="switch_type" value="@switch_type#">
+  </form>
+</body>
+
+</html>

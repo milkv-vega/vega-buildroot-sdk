@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>GMRP</title>
+	<style type="text/css">
+		.aa {
+			color: #CCCCCC
+		}
+	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<script language="JavaScript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+
+		function init() {
+			var cf = document.forms[0];
+			show_language_flag();
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var t = 0, b = 0, i = 0, tmp, n = 0, a = 0;
+			var arrText = new Array(), arrValue = new Array();
+			var objTb = document.getElementById("portlist");
+			var arrType = new Array(), arrClassName = new Array(), arrInputType = new Array(), arrWide = new Array(), arrName = new Array;
+			var strPort;
+
+			arrType[0] = "select";
+			arrClassName[0] = "select";
+			arrInputType[0] = "";
+
+			arrName[0] = "mode";
+			arrWide[0] = "11.25%";
+			comCreateTableElementById(1, ports, gPorts, objTb, arrType, arrName, arrClassName, arrWide, arrInputType);
+
+			for (t = 0; t < 3; t++) {
+				switch (t) {
+					case 0:
+						arrText[t] = "Forbidden";
+						break;
+					case 1:
+						arrText[t] = "Normal";
+						break;
+					case 2:
+						arrText[t] = "Fixed";
+						break;
+				}
+				arrValue[t] = t;
+			}
+			comCreateTdElementById(document.getElementsByName(arrName[0]), 0, document.getElementsByName(arrName[0]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+
+			cf.gmrp_enable.value = cf.h_gmrp_enable.value;
+
+			var timer = cf.h_gmrp_timer.value.split(":");
+			cf.hold_time.value = timer[0];
+			cf.join_time.value = timer[1];
+			cf.leave_time.value = timer[2];
+			cf.leaveall_time.value = timer[3];
+
+			i = 0;
+			ports = cf.port_bits.value;
+			var gmrp_port_tmp = cf.h_gmrp_port.value.split(";");
+			while (ports) {
+				if (ports & 1) {
+					if (gmrp_port_tmp == "") {
+						cf.mode[i].value = 0;
+					}
+					else {
+						cf.mode[i].value = gmrp_port_tmp[i];
+					}
+				}
+				i++;
+				ports >>= 1;
+			}
+
+			//dataToVisible(cf);
+
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+
+			setDisabled(true, cf.gmrp_enable);
+			setDisabled(true, cf.hold_time);
+			setDisabled(true, cf.join_time);
+			setDisabled(true, cf.leave_time);
+			setDisabled(true, cf.leaveall_time);
+			setDisabled(true, cf.Save);
+			setDisabled(true, cf.Cancel);
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var gmrp_port = cf.h_gmrp_port.value.split(";");
+			var i = 0;
+			var msg = "";
+
+			cf.h_gmrp_enable.value = cf.gmrp_enable.value;
+
+			if (cf.h_snoop_enable.value == "enable" && cf.h_gmrp_enable.value == 1) {
+				msg += "Please disable igmp snooping first!"
+				return checkMsg(msg);
+			}
+
+			cf.h_gmrp_timer.value = "";
+			cf.h_gmrp_timer.value += cf.hold_time.value + ":";
+			cf.h_gmrp_timer.value += cf.join_time.value + ":";
+			cf.h_gmrp_timer.value += cf.leave_time.value + ":";
+			cf.h_gmrp_timer.value += cf.leaveall_time.value;
+
+			cf.h_gmrp_port.value = "";
+			i = 0;
+			ports = cf.port_bits.value;
+			while (ports) {
+				if (ports & 1) {
+					cf.h_gmrp_port.value += cf.mode[i].value + ";";
+				}
+				i++;
+				ports >>= 1;
+			}
+		}
+
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+								<a href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a>
+								<a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current Page
+									&gt;&gt;</strong><span class="style4">Link Layer</span><strong
+									class="style4">&gt;&gt;</strong><span class="style3">GMRP</span></td>
+						</tr>
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td width="150" height="25" class="table_left">&nbsp;&nbsp;Global Eable</td>
+				<td height="25" class="table_right">&nbsp;
+					<input type="radio" name="gmrp_enable" value="1" autocomplete="off" />
+					Enable &nbsp;
+					<input type="radio" name="gmrp_enable" value="0" autocomplete="off" />
+					Disable
+				</td>
+			</tr>
+			<tr>
+				<td height="25" class="table_left">&nbsp;&nbsp;Hold Time</td>
+				<td class="table_right">&nbsp;&nbsp;
+					<input type="text" name="hold_time" maxlength="5" value="100" />
+					<span class="table_left">&nbsp;<100~32760ms> (hold time*2<=join time)Default:100ms</span>
+				</td>
+			</tr>
+			<tr>
+				<td height="25" class="table_left">&nbsp;&nbsp;Join Time</td>
+				<td class="table_right">&nbsp;&nbsp;
+					<input type="text" name="join_time" maxlength="5" value="200" />
+					<span class="table_left">&nbsp;<100~32760ms> (join time*2<=leave time)Default:200ms</span>
+				</td>
+			</tr>
+			<tr>
+				<td height="25" class="table_left">&nbsp;&nbsp;Leave Time</td>
+				<td class="table_right">&nbsp;&nbsp;
+					<input type="text" name="leave_time" maxlength="5" value="600" />
+					<span class="table_left">&nbsp;<100~32760ms> (leave time<=leaveall time)Default:600ms</span>
+				</td>
+			</tr>
+			<tr>
+				<td height="25" class="table_left">&nbsp;&nbsp;Leaveall Time</td>
+				<td class="table_right">&nbsp;&nbsp;
+					<input type="text" name="leaveall_time" maxlength="5" value="10000" />
+					<span class="table_left">&nbsp;<100~32760ms Default:10000ms</span>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">Port Id</td>
+							<td width="11.25%" height="25" align="center" valign="middle">GMRP Port Mode</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table id="portlist" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="submit" name="Save" value="Save" class="showbtn7" onclick="return checkData()" />
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=gmrp_en.html'" class="showbtn7">
+					</span>
+				</td>
+			</tr>
+		</table>
+
+		<input type="hidden" name="cpu_port" value="@cpu_port#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="h_snoop_enable" value="@h_snoop_enable#">
+
+		<input type="hidden" name="h_gmrp_enable" value="@h_gmrp_enable#">
+		<input type="hidden" name="h_gmrp_timer" value="@h_gmrp_timer#">
+		<input type="hidden" name="h_gmrp_port" value="@h_gmrp_port#">
+
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="gmrp_en.html">
+		<input type="hidden" name="next_file" value="gmrp_en.html">
+		<input type="hidden" name="port_map" value="@port_map#">
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+	</form>
+</body>
+
+</html>

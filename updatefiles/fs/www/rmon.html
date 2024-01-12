@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>RMON</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+	<link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+	<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+
+		function init() {
+			var cf = document.forms[0];
+			var t = 0, b = 0, i = 0, tmp, n = 0, a = 0;
+			dataToVisible(cf);
+
+			set_rmon_enable();
+
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+		}
+
+
+
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			setDisabled(cf.rmon_enable[0], cf.rmon_enable[1]);
+			setDisabled(flag, cf.Save);
+			setDisabled(flag, cf.Cancel);
+			set_rmon_enable(true);
+		}
+
+		function set_all_input(flag) {
+			var cf = document.forms[0];
+
+		}
+
+		function set_rmon_enable() {
+			var cf = document.forms[0];
+
+			set_all_input(cf.rmon_enable[1].checked);
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			dataToHidden(cf);
+		}
+
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+								<a href="https://milkv.io/">
+									<span class="showbtn3">网站</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span
+										class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td width="295" height="25" class="table_title"><strong
+									class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+									class="style4">远程监控</span><strong class="style4">&gt;&gt;</strong><span
+									class="style3">RMON</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr align="left" valign="top" class="table_enable">
+				<td height="25" width="120" valign="middle">&nbsp;&nbsp;RMON</td>
+				<td height="25" align="left" valign="middle" colspan="9">&nbsp;
+					<input type="radio" name="rmon_enable" value="enable" autocomplete="off"
+						onClick="set_rmon_enable()">启用&nbsp;
+					<input type="radio" name="rmon_enable" value="disable" autocomplete="off"
+						onClick="set_rmon_enable()">禁用
+			</tr>
+		</table>
+
+
+
+
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="submit" name="Save" value="配置" class="showbtn7" onclick="return checkData()" />
+						<input type="button" name="Cancel" value="取消"
+							onClick="location.href='setup.cgi?next_file=rmon.html'" class="showbtn7">
+					</span>
+				</td>
+			</tr>
+		</table>
+
+
+
+		<input type="hidden" name="cpu_port" value="@cpu_port#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="h_rmon_enable" value="@h_rmon_enable#">
+
+
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="rmon.html">
+		<input type="hidden" name="next_file" value="rmon.html">
+		<input type="hidden" name="port_map" value="@port_map#">
+
+	</form>
+</body>
+
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>风暴抑制</title>
+    <style type="text/css">
+        .aa {
+            color: #CCCCCC
+        }
+    </style>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        var count = 0;
+        var arr_lag_vlan = "";
+        function init() {
+            var cf = document.forms[0];
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var storm_status = cf.storm_status.value.split(";");
+            var port_sys_status = cf.storm_sys_status.value.split(";")[0].split(":");
+            var vlan_storm_str = cf.storm_vlan_status.value.split(";");
+            var port_status = new Array;
+            var objTb = document.getElementById("stormlist");
+            var arrType = new Array(), arrName = new Array(), arrClassName = new Array();
+            var arrWide = new Array();
+            var arrText = new Array(), arrValue = new Array();
+            var arrsysName = new Array();
+            var arr_lag_storm_str = "";
+            var arr_lag_vlan_str = "";
+            var arr_storm_params = "";
+            var t = 0;
+            var i = 0;
+
+            for (i = 0; i < cf.vlan_lag_port_set.value.split(";").length - 1; i++) {
+                if (0 != cf.vlan_lag_port_set.value.split(";")[i].split(":")[4]) {
+                    arr_lag_vlan_str += cf.vlan_lag_port_set.value.split(";")[i] + ";";
+                    arr_lag_storm_str += cf.storm_lag_status.value.split(";")[i] + ";";
+                }
+            }
+
+            arr_lag_vlan = arr_lag_vlan_str.split(";");
+
+            arrsysName = ["sys_dlf", "sys_multicast", "sys_broadcast", "sys_storm_type"];
+            arrName = ["dlf", "multicast", "broadcast", "storm_type"];
+            arrType = ["input", "input", "input", "select"];
+            arrWide = ["25%", "25%", "25%", "15%"];
+            arrClassName = ["input_txt3", "input_txt3", "input_txt3", "select1"];
+
+            if (arr_lag_vlan.length > 1)
+                CreateTableElementByCount(1, arr_lag_vlan.length - 1, 0, objTb, arrType, arrName, arrClassName, arrWide, undefined);
+            // CreateTableElementByCount(1, 1, 0, document.getElementById("storm_sys_list"), arrType, arrsysName, arrClassName, arrWide, undefined);
+            comCreateTableElementById(1, ports, gPorts, objTb, arrType, arrName, arrClassName, arrWide, undefined);
+            var portnum = parseInt(cf.port_bits.value);
+            var tmp_cnt = 0;
+            while (portnum != 0) {
+                portnum = portnum >> 1;
+                tmp_cnt++;
+            }
+            for (i = 0; i < arr_lag_vlan.length - 1; i++) {
+                cf.dlf[i + tmp_cnt].parentNode.parentNode.childNodes[0].innerHTML = "LAG" + arr_lag_vlan[i].split(":")[4];
+            }
+
+            arrText = ["kbps", "pps"];
+            arrValue = [0, 1];
+
+            comCreateTdElementById(document.getElementsByName(arrName[3]), 0, document.getElementsByName(arrName[3]).length - 1, 2, undefined, undefined, undefined, arrValue, arrText);
+
+            document.getElementsByName(arrsysName[0])[0].value = port_sys_status[0];
+            document.getElementsByName(arrsysName[1])[0].value = port_sys_status[1];
+            document.getElementsByName(arrsysName[2])[0].value = port_sys_status[2];
+            document.getElementsByName(arrsysName[3])[0].value = port_sys_status[3];
+            document.getElementsByName(arrsysName[0])[0].maxLength = 6;
+            document.getElementsByName(arrsysName[1])[0].maxLength = 6;
+            document.getElementsByName(arrsysName[2])[0].maxLength = 6;
+
+            var arr_storm_param = new Array();
+            arr_storm_param = (cf.storm_status.value + arr_lag_storm_str).split(";");
+
+            for (t = 0; t < arr_storm_param.length - 1; t++) {
+                port_status = arr_storm_param[t].split(":");
+                document.getElementsByName(arrName[0])[t].value = port_status[0];
+                document.getElementsByName(arrName[1])[t].value = port_status[1];
+                document.getElementsByName(arrName[2])[t].value = port_status[2];
+                document.getElementsByName(arrName[3])[t].value = port_status[3];
+                document.getElementsByName(arrName[0])[t].maxLength = 6;
+                document.getElementsByName(arrName[1])[t].maxLength = 6;
+                document.getElementsByName(arrName[2])[t].maxLength = 6;
+            }
+
+
+            for (t = 0; t < vlan_storm_str.length - 1; t++) {
+                list_add_vlan_storm(0, vlan_storm_str[t]);
+            }
+            cf.vlan_storm_type.value = "1";
+
+            dataToVisible(cf);
+            set_mode();
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+
+        }
+
+        function add_vlan_storm() {
+            var cf = document.forms[0];
+            var msg = "";
+            var i = 0;
+            var overwrite_storm = 0;
+            var maxnum = [400000, 200000];
+            var max_storm_type = ["400000kbps", "200000pps"];
+
+            if (parseInt(cf.vlan_dlf.value) == 0 && parseInt(cf.vlan_multicast.value) == 0 && parseInt(cf.vlan_broadcast.value) == 0)
+                msg += "请至少设置一条有效抑制值！\n";
+
+            msg += checkInt_str(cf.vlan_dlf, "基于VLAN的未知单播抑制值", 0, maxnum[cf.vlan_storm_type.value], 0, max_storm_type[cf.vlan_storm_type.value], true);
+            msg += checkInt_str(cf.vlan_multicast, "基于VLAN的未知组播抑制值", 0, maxnum[cf.vlan_storm_type.value], 0, max_storm_type[cf.vlan_storm_type.value], true);
+            msg += checkInt_str(cf.vlan_broadcast, "基于VLAN的广播抑制值", 0, maxnum[cf.vlan_storm_type.value], 0, max_storm_type[cf.vlan_storm_type.value], true);
+
+            msg += checkInt(cf.vlan_pid, "VLAN", 1, 4094, true);
+
+            if (msg != "")
+                return checkMsg(msg);
+
+            for (i = 1; i < cf.vlan_storm_table.options.length; i++) {
+                if (cf.vlan_pid.value == cf.vlan_storm_table.options[i].value.split(":")[0]) {
+                    flag = confirm("该VLAN记录已存在，是否覆盖?");
+                    if (flag == true) {
+                        overwrite_storm = i;
+                        break;
+                    }
+                    else
+                        return false;
+                }
+            }
+
+            if (!overwrite_storm) {
+                if (count >= 100)
+                    msg += "最多支持配置100条基于VLAN的风暴抑制";
+
+                if (msg != "")
+                    return checkMsg(msg);
+            }
+
+            vlan_storm_str = cf.vlan_pid.value + ":" + parseInt(cf.vlan_dlf.value) + ":" + parseInt(cf.vlan_multicast.value) + ":" + parseInt(cf.vlan_broadcast.value) + ":" + cf.vlan_storm_type.value;
+            list_add_vlan_storm(overwrite_storm, vlan_storm_str);
+
+            cf.vlan_pid.value = "";
+            cf.vlan_dlf.value = "";
+            cf.vlan_multicast.value = "";
+            cf.vlan_broadcast.value = "";
+            cf.vlan_storm_type.value = "1";
+        }
+
+        function remove_vlan_storm() {
+            var cf = document.forms[0];
+
+            var pos = cf.vlan_storm_table.selectedIndex;
+
+            if (pos > 0) {
+                list_del_vlan_storm(pos);
+            }
+        }
+
+        function list_add_vlan_storm(overwrite_storm, vlan_storm_str) {
+            var cf = document.forms[0];
+            var tmp = "";
+            var vlan_storm_params = vlan_storm_str.split(":");
+            var i = 0;
+
+            if (0 == overwrite_storm)
+                tmp = "-" + (count + 1);
+            else
+                tmp = "-" + (overwrite_storm);
+
+            for (i = fucCheckLength(tmp); i < 11; i++)
+                tmp += "-";
+
+            tmp += vlan_storm_params[0];
+            for (i = 0; i < (16 - vlan_storm_params[0].length); i++)
+                tmp += "-";
+
+            tmp += vlan_storm_params[1];
+            for (i = 0; i < (20 - vlan_storm_params[1].length); i++)
+                tmp += "-";
+
+            tmp += vlan_storm_params[2];
+            for (i = 0; i < (25 - vlan_storm_params[2].length); i++)
+                tmp += "-";
+
+            tmp += vlan_storm_params[3];
+            for (i = 0; i < (22 - vlan_storm_params[3].length); i++)
+                tmp += "-";
+
+            if (vlan_storm_params[4] == 0)
+                tmp += "kbps";
+            else
+                tmp += "pps";
+
+            for (i = 0; i < (10 - vlan_storm_params[4].length); i++)
+                tmp += "-";
+
+            if (0 == overwrite_storm) {
+
+                cf.vlan_storm_table.options.add(new Option(tmp, vlan_storm_str));
+                count++;
+            }
+            else {
+                cf.vlan_storm_table.options[overwrite_storm].value = vlan_storm_str;
+                cf.vlan_storm_table.options[overwrite_storm].innerHTML = tmp;
+            }
+        }
+
+        function list_del_vlan_storm(Index) {
+            var cf = document.forms[0];
+
+            count--;
+            cf.vlan_storm_table.remove(Index);
+        }
+
+        function set_mode() {
+            var cf = document.forms[0];
+            var i = 0;
+            var trunk_maps = 0;
+            var lacp_maps = 0;
+            var arr_trunk_setting = cf.trunk_setting.value.split(";");
+            var arr_lacp_port_cfg = cf.lacp_port_cfg.value.split(";");
+
+            if ("enable" == cf.h_trunk_enable.value) {
+                for (i = 0; i < arr_trunk_setting.length - 1; i++) {
+                    if (arr_trunk_setting[i].split(":")[1] == "1")
+                        trunk_maps |= arr_trunk_setting[i].split(":")[0];
+                }
+
+                for (i = 0; i < cf.dlf.length; i++) {
+                    if (trunk_maps & (1 << i))
+                        setDisabled(true, cf.dlf[i], cf.multicast[i], cf.broadcast[i], cf.storm_type[i]);
+                }
+            }
+
+            if ("1" == cf.h_lacp_enable.value) {
+                for (i = 0; i < arr_lacp_port_cfg.length - 1; i++) {
+                    if (arr_lacp_port_cfg[i].split(":")[2] == "1")
+                        lacp_maps |= (1 << i);
+                }
+
+                for (i = 0; i < cf.dlf.length; i++) {
+                    if (lacp_maps & (1 << i)) {
+                        setDisabled(true, cf.dlf[i], cf.multicast[i], cf.broadcast[i], cf.storm_type[i]);
+                    }
+                }
+            }
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+            var i = 0;
+
+            setDisabled(true, cf.Save, cf.Cancel);
+            setDisabled(true, cf.sys_dlf, cf.sys_multicast, cf.sys_broadcast, cf.sys_storm_type);
+            setDisabled(true, cf.vlan_pid, cf.vlan_dlf, cf.vlan_multicast, cf.vlan_broadcast, cf.vlan_storm_type);
+
+            for (i = 0; i < cf.dlf.length; i++)
+                setDisabled(true, cf.dlf[i], cf.multicast[i], cf.broadcast[i], cf.storm_type[i]);
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var storm_sys_status = "";
+            var storm_status = "";
+            var storm_lag_status = "";
+            var msg = "";
+            var t = 0;
+            var i = 0;
+            var lag_index = 0;
+            var maxnum = [400000, 200000];
+            var max_storm_type = ["400000kbps", "200000pps"];
+            var port_name = "";
+            var port_map_array = cf.port_map.value.split(";");
+            var storm_lag_status_array = cf.storm_lag_status.value.split(";");
+
+            msg += checkInt_str(cf.sys_dlf, "全局未知单播抑制值", 0, maxnum[cf.sys_storm_type.value], 0, max_storm_type[cf.sys_storm_type.value], true);
+            msg += checkInt_str(cf.sys_multicast, "全局未知组播抑制值", 0, maxnum[cf.sys_storm_type.value], 0, max_storm_type[cf.sys_storm_type.value], true);
+            msg += checkInt_str(cf.sys_broadcast, "全局广播抑制值", 0, maxnum[cf.sys_storm_type.value], 0, max_storm_type[cf.sys_storm_type.value], true);
+            storm_sys_status += cf.sys_dlf.value + ":" + cf.sys_multicast.value + ":" + cf.sys_broadcast.value + ":" + cf.sys_storm_type.value + ";";
+
+            for (t = 0; t < cf.switch_port.value; t++) {
+                port_name = "端口" + port_map_array[t];
+                msg += checkInt_str(cf.dlf[t], port_name + "未知单播抑制值", 0, maxnum[cf.storm_type[t].value], 0, max_storm_type[cf.storm_type[t].value], true);
+                msg += checkInt_str(cf.multicast[t], port_name + "未知组播抑制值", 0, maxnum[cf.storm_type[t].value], 0, max_storm_type[cf.storm_type[t].value], true);
+                msg += checkInt_str(cf.broadcast[t], port_name + "广播抑制值", 0, maxnum[cf.storm_type[t].value], 0, max_storm_type[cf.storm_type[t].value], true);
+                storm_status += cf.dlf[t].value + ":" + cf.multicast[t].value + ":" + cf.broadcast[t].value + ":" + cf.storm_type[t].value + ";";
+            }
+
+            i = 0;
+            for (t = 0; t < 8; t++) {
+                if (0 != cf.vlan_lag_port_set.value.split(";")[t].split(":")[4]) {
+                    port_name = "LAG" + cf.vlan_lag_port_set.value.split(";")[t].split(":")[4];
+                    lag_index = i + parseInt(cf.switch_port.value);
+                    i++;
+                    msg += checkInt_str(cf.dlf[lag_index], port_name + "未知单播抑制值", 0, maxnum[cf.storm_type[lag_index].value], 0, max_storm_type[cf.storm_type[lag_index].value], true);
+                    msg += checkInt_str(cf.multicast[lag_index], port_name + "未知组播抑制值", 0, maxnum[cf.storm_type[lag_index].value], 0, max_storm_type[cf.storm_type[lag_index].value], true);
+                    msg += checkInt_str(cf.broadcast[lag_index], port_name + "广播抑制值", 0, maxnum[cf.storm_type[lag_index].value], 0, max_storm_type[cf.storm_type[lag_index].value], true);
+                    storm_lag_status += cf.dlf[lag_index].value + ":" + cf.multicast[lag_index].value + ":" + cf.broadcast[lag_index].value + ":" + cf.storm_type[lag_index].value + ";";
+                }
+                else {
+                    storm_lag_status += storm_lag_status_array[t] + ";";
+                }
+            }
+
+
+            if (msg.length == 0) {
+                cf.storm_sys_status.value = storm_sys_status;
+                cf.storm_status.value = storm_status;
+                cf.storm_lag_status.value = storm_lag_status;
+                cf.storm_vlan_status.value = "";
+
+                for (i = 1; i < cf.vlan_storm_table.length; i++)
+                    cf.storm_vlan_status.value += cf.vlan_storm_table.options[i].value + ";";
+            }
+
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"><a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span
+                                        class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">端口配置</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">风暴抑制</span></td>
+                        </tr>
+
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow: hidden; background: #969594; height: 1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top" id="sys_storm_str">
+                <td height="25">
+                    <table>
+                        <tr align="left" width="1002" valign="top" colspan="2" class="table_enable">
+                            <td height="25" width="1002" valign="middle">&nbsp;&nbsp;全局风暴抑制：</td>
+                        </tr>
+                    </table>
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr class="td2">
+                            <td width="10%" height="25" align="center" valign="middle">端口号</td>
+                            <td width="25%" height="25" align="center" valign="middle">未知单播抑制值</td>
+                            <td width="25%" height="25" align="center" valign="middle">未知组播抑制值</td>
+                            <td width="25%" height="25" align="center" valign="middle">广播抑制值</td>
+                            <td width="15%" height="25" align="center" valign="middle">抑制类型</td>
+                        </tr>
+                        <tr class="td1">
+                            <td width="10%" height="25" align="center" valign="middle">全部端口</td>
+                            <td width="25%" height="25" align="center" valign="middle"><input name="sys_dlf" ,
+                                    class="input_txt3"></td>
+                            <td width="25%" height="25" align="center" valign="middle"><input name="sys_multicast" ,
+                                    class="input_txt3"></td>
+                            <td width="25%" height="25" align="center" valign="middle"><input name="sys_broadcast" ,
+                                    class="input_txt3"></td>
+                            <td width="15%" height="25" align="center" valign="middle">
+                                <select name="sys_storm_type" class="select1">
+                                    <option value="0">kbps</option>
+                                    <option value="1">pps</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow: hidden; background: #969594; height: 1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25">
+                    <table>
+                        <tr align="left" width="1002" valign="top" colspan="2" class="table_enable">
+                            <td height="25" width="1002" valign="middle">&nbsp;&nbsp;端口风暴抑制：</td>
+                        </tr>
+                    </table>
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr class="td2">
+                            <td width="10%" height="25" align="center" valign="middle">端口号</td>
+                            <td width="25%" height="25" align="center" valign="middle">未知单播抑制值</td>
+                            <td width="25%" height="25" align="center" valign="middle">未知组播抑制值</td>
+                            <td width="25%" height="25" align="center" valign="middle">广播抑制值</td>
+                            <td width="15%" height="25" align="center" valign="middle">抑制类型</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25">
+                    <table id="stormlist" width="1002" border="0" cellpadding="0" cellspacing="1"
+                        style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow: hidden; background: #969594; height: 1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25">
+                    <table>
+                        <tr align="left" width="1002" valign="top" colspan="2" class="table_enable">
+                            <td height="25" width="1002" valign="middle">&nbsp;&nbsp;基于VLAN的风暴抑制：</td>
+                        </tr>
+                    </table>
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr class="td2">
+                            <td width="10%" height="25" align="center" valign="middle">VLAN</td>
+                            <td width="25%" height="25" align="center" valign="middle">未知单播抑制值</td>
+                            <td width="25%" height="25" align="center" valign="middle">未知组播抑制值</td>
+                            <td width="25%" height="25" align="center" valign="middle">广播抑制值</td>
+                            <td width="15%" height="25" align="center" valign="middle">抑制类型</td>
+                        </tr>
+                        <tr class="td1">
+                            <td width="10%" height="25" align="center" valign="middle"><input name="vlan_pid"
+                                    maxlength="4" class="input_width_80"></td>
+                            <td width="25%" height="25" align="center" valign="middle"><input name="vlan_dlf"
+                                    maxlength="6" class="input_txt3"></td>
+                            <td width="25%" height="25" align="center" valign="middle"><input name="vlan_multicast"
+                                    maxlength="6" class="input_txt3"></td>
+                            <td width="25%" height="25" align="center" valign="middle"><input name="vlan_broadcast"
+                                    maxlength="6" class="input_txt3"></td>
+                            <td width="15%" height="25" align="center" valign="middle">
+                                <select name="vlan_storm_type" class="select1">
+                                    <option value="0">kbps</option>
+                                    <option value="1">pps</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="button" name="vlan_storm_add" value="添加" onClick="add_vlan_storm();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="vlan_storm_remove" value="删除" onClick="remove_vlan_storm();"
+                            class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25">
+                    <select name="vlan_storm_table" size="20"
+                        style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                        <option value="0">
+                            -序号-------VLAN------------未知单播抑制值--------未知组播抑制值-------------广播抑制值--------------抑制类型-------------------------
+                        </option>
+                    </select>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="配置" onClick="return checkData();"
+                            class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="取消"
+                            onClick="location.href='setup.cgi?next_file=storm.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+        <input type="hidden" name="storm_status" value="@storm_status#">
+        <input type="hidden" name="storm_lag_status" value="@storm_lag_status#">
+        <input type="hidden" name="storm_sys_status" value="@storm_sys_status#">
+        <input type="hidden" name="storm_vlan_status" value="@storm_vlan_status#">
+        <input type="hidden" name="loader" value="admin">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="storm.html">
+        <input type="hidden" name="next_file" value="storm.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="h_trunk_enable" value="@h_trunk_enable#">
+        <input type="hidden" name="trunk_setting" value="@trunk_setting#">
+        <input type="hidden" name="h_lacp_enable" value="@h_lacp_enable#">
+        <input type="hidden" name="lacp_port_cfg" value="@lacp_port_cfg#">
+        <input type="hidden" name="vlan_lag_port_set" value="@vlan_lag_port_set#">
+        <input type="hidden" name="port_map" value="@port_map#">
+</body>
+
+</html>

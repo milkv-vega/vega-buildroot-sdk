@@ -1,0 +1,389 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Access Control</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        function init() {
+            var cf = document.forms[0];
+            var i;
+            var access_allow = new Array();
+
+            show_language_flag();
+            dataToVisible(cf);
+
+            for (i = 0; i < 2; i++) {
+                if (cf.access_type.value & (1 << i))
+                    cf.http_access[i].checked = true;
+            }
+
+            if (cf.ssh_control.value == "enable")
+                cf.ssh_access.checked = true;
+            else
+                cf.ssh_access.checked = false;
+
+            if (cf.telnet_control.value == "enable")
+                cf.telnet_access.checked = true;
+            else
+                cf.telnet_access.checked = false;
+
+            access_allow = cf.allowed_ip.value.split(";");
+
+            for (i = 0; i < 20; i++)
+                cf.allow_ip[i].value = access_allow[i];
+
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+            else
+                set_access();
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.http_access[0], cf.http_access[1]);
+            setDisabled(true, cf.ssh_access, cf.telnet_access);
+            setDisabled(true, cf.access_control[0], cf.access_control[1]);
+            setDisabled(true, cf.Save, cf.Cancel);
+            for (i = 0; i < 20; i++)
+                setDisabled(true, cf.allow_ip[i]);
+        }
+
+
+        function set_access() {
+            var cf = document.forms[0];
+            var i, dflag = (getRadioCheckedValue(cf.access_control) == "disable");
+
+            for (i = 0; i < 20; i++)
+                setDisabled(dflag, cf.allow_ip[i]);
+        }
+
+        function check_same_subnet(accessip, local_ip, local_mask) {
+            var cf = document.forms[0];
+
+            var switch_ip = local_ip.split(".");
+            var switch_mask = local_mask.split(".");
+            var acc_ip = accessip.value.split(".");
+
+            for (var i = 0; i < 4; i++) {
+                if ((switch_ip[i] & switch_mask[i]) != (acc_ip[i] & switch_mask[i])) {
+                    //alert(addstr(msg_ip_gw_mismatch, cf.lan_ip.value, cf.lan_gw.value));
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "";
+            var access_ip = "", access_type = 0, i;
+            var pc_ip = cf.clinet_ip.value;
+            var switch_ip = cf.lan_ip.value;
+            var switch_mask = cf.lan_mask.value;
+
+            var check_mask_ok = 0;
+
+            for (i = 0; i < 2; i++)
+                if (cf.http_access[i].checked == true)
+                    access_type += 1 << i;
+
+            if (access_type == 0)
+                msg += msg_http_access;
+
+            if (cf.ssh_access.checked == true)
+                cf.ssh_control.value = "enable"
+            else
+                cf.ssh_control.value = "disable"
+
+            if (cf.telnet_access.checked == true)
+                cf.telnet_control.value = "enable"
+            else
+                cf.telnet_control.value = "disable"
+
+            if (getRadioCheckedValue(cf.access_control) == "enable") {
+                for (i = 0; i < 20; i++) {
+                    if (!isBlank(cf.allow_ip[i].value)) {
+                        if (check_uni_ip(cf.allow_ip[i]) == false)
+                            msg += msg_access_first + (i + 1) + msg_access_mod + msg_incorrect_ip;
+
+                        if (check_same_subnet(cf.allow_ip[i], switch_ip, switch_mask))
+                            check_mask_ok++;
+                        if (access_ip.indexOf(cf.allow_ip[i].value + ";") >= 0)
+                            msg += msg_access_first + (i + 1) + msg_access_mod + msg_repeat_ip;
+                    }
+                    access_ip += cf.allow_ip[i].value + ";";
+                }
+                if (check_mask_ok == 0)
+                    msg += msg_not_samemask;
+
+                if (access_ip == ";;;;;;;;;;;;;;;;;;;;")
+                    msg += msg_ip_input;
+                else
+                    if (!(access_ip.indexOf(pc_ip + ";") >= 0))
+                        if (!confirm(msg_deny_pc))
+                            return false;
+
+                cf.allowed_ip.value = access_ip;
+            }
+
+            cf.access_type.value = access_type;
+
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init();">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF">
+                            </td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+                                <a href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a>
+                                <a href="./setup.cgi?todo=changeLanguage">
+                                    <span id='changeLanguage' class="showbtn4">中文版</span></a><a
+                                    href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr class="table_title">
+                            <td width="351" height="25"><strong class="style4">&nbsp;&nbsp;Current Page
+                                    &gt;&gt;</strong><span class="style4"> Access Control </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> Access Control</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" cellspacing="1">
+                        <tr class="table_enable">
+                            <td width="226" height="25" class="table_enable">&nbsp;&nbsp;Enable Terminal Configure</td>
+                            <td width="769" height="25" class="table_enable">&nbsp;
+                                <input type="checkbox" name="ssh_access" />&nbsp;SSH&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                <input type="checkbox" name="telnet_access" />&nbsp;Telnet
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" cellspacing="1">
+                        <tr>
+                            <td width="226" height="25" class="table_enable">&nbsp;&nbsp;WEB Server Transfer Protocol
+                            </td>
+                            <td width="769" height="25" class="table_enable">&nbsp;
+                                <input type="checkbox" name="http_access" />
+                                HTTP&nbsp;&nbsp;
+                                &nbsp;
+                                <input type="checkbox" name="http_access" />
+                                HTTPS
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" cellspacing="1">
+                        <tr>
+                            <td width="226" height="25" class="table_enable">&nbsp;&nbsp;Accessible IP Address Control
+                            </td>
+                            <td width="769" height="25" class="table_enable">&nbsp;
+                                <input type="radio" name="access_control" value="enable" autocomplete="off"
+                                    onClick="set_access()" />
+                                Enable
+                                &nbsp;
+                                <input type="radio" name="access_control" value="disable" autocomplete="off"
+                                    onClick="set_access()" />
+                                Disable
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td height="25" colspan="2">
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1">
+                        <tr align="center" valign="middle" class="td2">
+                            <td width="150" height="25">Index</td>
+                            <td height="25">Accessible IP List</td>
+                            <td width="150" height="25">Index</td>
+                            <td height="25">Accessible IP List</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1">
+                        <tr align="center" valign="middle" class="table_black">
+                            <td width="150" height="25">1</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td width="150" height="25">2</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_right">
+                            <td height="25">3</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">4</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_black">
+                            <td height="25">5</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">6</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_right">
+                            <td height="25">7</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">8</td>
+                            <td><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_black">
+                            <td height="25">9</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">10</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_right">
+                            <td height="25">11</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">12</td>
+                            <td><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_black">
+                            <td height="25">13</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">14</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_right">
+                            <td height="25">15</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">16</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_black">
+                            <td height="25">17</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">18</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                        <tr align="center" valign="middle" class="table_right">
+                            <td height="25">19</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                            <td height="25">20</td>
+                            <td height="25"><input type="text" class="input_user" maxlength="15" name="allow_ip" /></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px">
+                    <span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="Submit" onClick="return checkData();" class="showbtn6">
+                        &nbsp;
+                        <input type="button" name="Cancel" value="Cancel"
+                            onClick="location.href='setup.cgi?next_file=access_en.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="ssh_control" value="@ssh_control#">
+        <input type="hidden" name="telnet_control" value="@telnet_control#">
+        <input type="hidden" name="access_type" value="@access_type#">
+        <input type="hidden" name="h_access_control" value="@h_access_control#">
+        <input type="hidden" name="allowed_ip" value="@allowed_ip#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="access_en.html">
+        <input type="hidden" name="next_file" value="access_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="clinet_ip" value="@clinet_ip#">
+        <input type="hidden" name="lan_ip" value="@lan_ip#">
+        <input type="hidden" name="lan_mask" value="@lan_mask#">
+    </form>
+</body>
+
+</html>

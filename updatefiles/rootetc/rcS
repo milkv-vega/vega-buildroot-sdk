@@ -1,0 +1,50 @@
+#!/bin/sh
+
+echo "mdev set start ..."
+mount -a
+mkdir /dev/pts
+#mknod /dev/imx28x_gpio c 253 0
+#mknod /dev/imx28x_spi  c 153 0
+mknod /dev/ttymxc0 c 204 16
+chmod 777 /dev/ttymxc0
+mount -t devpts devpts /dev/pts
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+mount -t jffs2 /dev/mtdblock4 /mnt
+
+/usr/sbin/gpios &
+
+cp -f /mnt/etc/* /usr/etc/
+
+mkdir /tmp/mnt
+mkdir /var/run
+mkdir /var/log
+
+ifconfig lo 127.0.0.1
+route add -net 127.0.0.0 netmask 255.255.0.0 lo > /dev/null 2>&1
+
+#chmod 777 /mnt/mac
+/sbin/ifconfig eth0 down
+/sbin/ifconfig eth0 hw ether `/usr/sbin/flash_mac -l`
+/sbin/ifconfig eth0 up
+
+#use rngd to increase random pool
+/usr/bin/rngd &
+
+echo -n > /tmp/ntp_start
+
+# start services
+/sbin/klogd&
+sleep 1
+/usr/sbin/sdk_init
+/usr/sbin/memmgr
+/usr/sbin/mwhead & > /dev/null 2>&1
+echo "rc start ..."
+/usr/sbin/rc start > /dev/null
+#sleep 2
+
+/usr/sbin/crond &
+/usr/sbin/cmd_agent_ap
+/usr/sbin/rc snmp restart &
+#/usr/sbin/telnetd &
+#/usr/bin/sshd &

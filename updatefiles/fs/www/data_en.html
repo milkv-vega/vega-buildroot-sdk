@@ -1,0 +1,286 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Radius DB</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        < !-
+
+        var count = 0;
+
+        function init() {
+            var cf = document.forms[0];
+            var t = 0, i = 0, tmp;
+            var user = new Array();
+            //document.getElementById("logo").innerHTML = getLogoByType(cf.switch_type.value);
+
+            show_language_flag();
+            user = cf.userlist.value.split(";");
+
+            while (t < (user.length - 1)) {
+                var list = new Array();
+                list = user[t].split(":");
+
+                var tmp = "--" + (t + 1);
+                for (i = fucCheckLength(tmp); i < 5; i++)
+                    tmp += "-";
+                if (i == 5)
+                    tmp += "----------------"
+
+                tmp += list[0];
+                for (i = fucCheckLength(list[0]); i < 16; i++)
+                    tmp += "-";
+                if (i == 16)
+                    tmp += "--------";
+
+                if (cf.loader.value != "admin")
+                    tmp += "******";
+                else
+                    tmp += list[1];
+
+                cf.data_list.options.add(new Option(tmp, list[0] + ":" + list[1]));
+
+                count++;
+                t++;
+            }
+
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+            var i;
+
+            setDisabled(true, cf.auth_name, cf.auth_pass);
+            setDisabled(true, cf.Add, cf.Del, cf.Save);
+        }
+
+        function additem() {
+            var cf = document.forms[0];
+            var msg = "", check = new Array();;
+            var i = 0, modify = 0, t = 0;
+            var sn_str = "";
+            var flag = false;
+
+            var tmp = cf.auth_name.value;
+            for (i = fucCheckLength(cf.auth_name.value); i < 16; i++)
+                tmp += "-";
+            if (i == 16)
+                tmp += "--------";
+            tmp += cf.auth_pass.value;
+
+            if (isBlank(cf.auth_name.value))
+                msg += addstr(msg_blank, msg_auth_name);
+            else if (isIllegal(cf.auth_name.value) == false)
+                msg += addstr(msg_invalid_num, msg_auth_name);
+
+            if (isBlank(cf.auth_pass.value))
+                msg += addstr(msg_blank, msg_auth_pass);
+            else if (isIllegal(cf.auth_pass.value) == false)
+                msg += addstr(msg_invalid_num, msg_auth_pass);
+
+            if (msg == "") {
+                modify = 0;
+                for (t = 1; t < cf.data_list.options.length; t++) {
+                    check = cf.data_list.options[t].value.split(":");
+                    if (cf.auth_name.value == check[0]) {
+                        flag = confirm("The User entry exists, cover it?");
+                        if (flag == true) {
+                            sn_str = "--" + t;
+                            for (i = fucCheckLength(sn_str); i < 5; i++)
+                                sn_str += "-";
+                            if (i == 5)
+                                sn_str += "----------------";
+
+                            cf.data_list.options[t].text = sn_str + tmp;
+                            cf.data_list.options[t].value = cf.auth_name.value + ":" + cf.auth_pass.value;
+                            modify = 1;
+                        }
+                        else
+                            return false;
+                    }
+                }
+
+                if (modify == 0) {
+                    if (count >= 128) {
+                        msg += msg_auth_max_member;
+                        return checkMsg(msg);
+                    }
+
+                    sn_str = "--" + t;
+                    for (i = fucCheckLength(sn_str); i < 5; i++)
+                        sn_str += "-";
+                    if (i == 5)
+                        sn_str += "----------------";
+
+                    tmp = sn_str + tmp;
+                    cf.data_list.options.add(new Option(tmp, cf.auth_name.value + ":" + cf.auth_pass.value));
+                    count++;
+                }
+            }
+
+            return checkMsg(msg);
+        }
+
+        function delitem() {
+            var cf = document.forms[0];
+            var pos = cf.data_list.selectedIndex;
+
+            if (pos > 0) {
+                var delval = cf.data_list.options[pos].value;
+                cf.data_list.remove(pos);
+                count--;
+            }
+            return true;
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "", tmp = "";
+
+            cf.userlist.value = "";
+
+            for (t = 1; t < cf.data_list.options.length; t++)
+                cf.userlist.value += cf.data_list.options[t].value + ";";
+
+            if (count == 0)
+                msg += msg_auth_null;
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a>
+                                <a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn3">中文版</span></a>
+                                <a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td width="316" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+                                    Page &gt;&gt;</strong><span class="style4"> Access Control </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> Radius DB</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Access Account</td>
+                            <td class="table_right">&nbsp;&nbsp;<input type="text" name="auth_name" class="input_txt2"
+                                    maxlength="16" /></td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;User Password</td>
+                            <td class="table_right">&nbsp;&nbsp;<input type="text" name="auth_pass" class="input_txt2"
+                                    maxlength="16" /></td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Options</td>
+                            <td class="table_right">&nbsp;
+                                <input type="button" name="Add" value="Add " class="showbtn7"
+                                    onclick="return additem()" />
+                                <input type="button" name="Del" value="Delete " class="showbtn7"
+                                    onclick="return delitem()" />
+                                <input type="Submit" name="Save" value="Save" onClick="return checkData();"
+                                    class="showbtn7">
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="1" cellpadding="0">
+                        <tr height="8">
+                            <td width="1001">
+                                <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><select name="data_list" size="19" id="uselect"
+                                    style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                                    <option value="0">
+                                        --SN-----------------USER--------------------PASSWORD-------------------------------------------------------------------------------------------------
+                                    </option>
+                                </select></td>
+                        </tr>
+                        <tr height="8">
+                            <td width="1001">
+                                <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="userlist" value="@userlist#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="data_en.html">
+        <input type="hidden" name="next_file" value="data_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+    </form>
+</body>
+
+</html>

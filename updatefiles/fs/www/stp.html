@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>RSTP即时状态</title>
+        <META http-equiv="Pragma" CONTENT="no-cache">
+        <META HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
+        <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+        <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+		<!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+		<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+		<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+		<script language="JavaScript" type="text/javascript" src="js/func.js"></script> 
+		<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+        <script language="JavaScript" type="text/javascript">
+            <!-- hide script from old browsers
+            function checkData()
+            {
+                var cf = document.forms[0];
+                var string="";
+                return true;
+            }
+
+            function doCancel()
+            {
+                var cf=document.forms[0];
+                top.location.href="setup.cgi?next_file=dscp.html";
+            }
+
+            function init()
+            {
+                var i=0,j,tmp;
+                var cf = document.forms[0];
+                showPorts(cf.RSTP_Port_status.value);
+                dataToVisible(cf);
+            }
+
+            function showPorts(portInfos)
+            {
+                var cf = document.forms[0];
+                var ports = new Array(), portAttr = new Array();
+                var table = document.getElementById("stp_tbl");
+                var startIndex = 8, i, j, a = 0, b = 0, n = 0;
+                var HTMLStr, strPort;
+                var newRow;
+                var newCell;
+
+                ports = portInfos.split(";");
+                for(i = 0; i < ports.length - 1; i++)
+                {
+					portAttr = ports[i].split(":");
+					var c = portAttr[0]-1;
+                    if( (cf.port_bits.value & (1<< c )) == 0 )
+						continue;
+                    if( (cf.g_port_bits.value & (1<< c )) != 0 )
+                        strPort = "G" + (++a);
+                    else
+                        strPort = "XG" + (++b);				
+                    
+                    newRow = table.insertRow(startIndex + n);
+                    if(n % 2 == 0)
+                        newRow.className = "table_black";
+                    else
+                        newRow.className = "table_right";
+                    n++;
+                    for(j = 0; j < portAttr.length; j++)
+                    {
+                        var tmp = portAttr[j];
+                        if(j==0)
+                            HTMLStr = "<div align=\"center\">" + strPort + "</div>";
+                        else
+                            HTMLStr = "<div align=\"center\">" + tmp + "</div>";
+                        newCell = newRow.insertCell(j);
+                        newCell.innerHTML = HTMLStr;
+                        if(j == 0)
+                            newCell.height = 20;
+                    }
+                }
+            }
+            //-->
+        </script>
+    </HEAD>
+    <body onLoad="init()">
+        <form method="POST" action="setup.cgi">
+
+            <div align="center">
+                <table width="660" border="0" align="center" cellPadding="0" cellSpacing="0">
+                    <tr>
+                        <td class="table_left"><br>
+                            <hr size="1" noshade color="#ffffff"></td>
+                    </tr>
+                </table>
+                <table width="660" border="0" align="center" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td width="125" align="right" valign="top" bgcolor="#efefef"> <br>
+                            <table width="100%"height="17" border="0" cellpadding="0" cellspacing="0" bgcolor="#656565">
+                                <tr>
+                                    <td height="19" align="right" valign="middle" class="td2">RSTP 状态信息&nbsp;</td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td width="535">
+                            <table id="stp_tbl" width="99%" border="0" align="center" cellpadding="0" cellspacing="1">
+                                <tr>
+                                    <td height="26" colspan="8" align="left" valign="middle" class="table_enable"><strong>&nbsp;根交换机信息表: </strong></td>
+                                </tr>
+                                <tr>
+                                    <td  colspan="3" height="20" class="table_left"><strong>&nbsp;&nbsp;本交换机ID标识</strong></td>
+                                    <td height="20"  colspan="5" class="table_right">&nbsp;@RSTP_BridgeId#</td>
+                                </tr>
+                                <tr>
+                                    <td height="20"  colspan="3" class="table_left">&nbsp;&nbsp;根交换机ID标识</td>
+                                    <td height="20"  colspan="5" class="table_right">&nbsp;@RSTP_RootId#</td>
+                                </tr>
+                                <tr>
+                                    <td height="20" colspan="3" class="table_left">&nbsp;&nbsp;根端口号</td>
+                                    <td height="20" colspan="5" class="table_right">&nbsp;@RSTP_RootPort#</td>
+                                </tr>
+                                <tr>
+                                    <td  colspan="3" height="20" class="table_left">&nbsp;&nbsp;根端口路径开销</td>
+                                    <td  colspan="5" height="20" class="table_right">&nbsp;@RSTP_RootPathCost#</td>
+                                </tr>
+                                <tr>
+                                    <td height="20" colspan="8" align="left" valign="middle"> <hr size="1"></td>
+                                </tr>
+                                <tr>
+                                    <td height="26" colspan="8"  class="table_enable">&nbsp;本交换机信息表:</td>
+                                </tr>
+                                <tr  class="td2">
+                                    <td width=9% height="25" align="center">端口号</td>
+                                    <td width=9% align="center">优先级</td>
+                                    <td width=12% align="center">路径开销</td>
+                                    <td width=14% align="center">点到点网络</td>
+                                    <td width=12% align="center">边缘端口</td>
+                                    <td width=12% align="center">相连网络</td>
+                                    <td width=16% align="center">端口角色</td>
+                                    <td width=16% align="center">转发状态</td>
+                                </tr>
+                                <tr>
+                                    <td height="20" colspan="8"><hr size="1"></td>
+                                </tr>
+                                <tr>
+                                    <td height="20" colspan="8" align="center">
+                                        <input type="button" name="close2" class="stdbutton" value="关闭" onClick="self.close()">&nbsp;
+                                        <input type="button" name="Refresh" value="刷新" class="stdbutton" onClick="location.href='setup.cgi?next_file=stp.html'">
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                <table width="660" height="25" border="0" align="center" cellpadding="2" cellspacing="0">
+                    <tr>
+                        <td align="center" valign="middle" bgcolor="#dbdee4" class="td2">
+                            <script language="JavaScript">document.write(msg_copyright);</script>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <input type="hidden" name="rstp_port_config" value="@rstp_port_config#">
+            <input type="hidden" name="todo" value="save">
+            <input type="hidden" name="this_file" value="stp.html">
+            <input type="hidden" name="next_file" value="stp.html">
+            <input type="hidden" name="message" value="@msg_text#">
+            <input type="hidden" name="switch_type" value="@switch_type#">
+            <input type="hidden" name="port_bits" value="@port_bits#">
+            <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+            <input type="hidden" name="RSTP_Port_status" value="@RSTP_Port_status#">
+        </form>
+    </body>
+</html>

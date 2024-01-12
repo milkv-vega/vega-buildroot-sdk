@@ -1,0 +1,1 @@
+cmd_/home/dev/Nuclei/linux_sdk/linux/drivers/net/ethernet/fsl/epon_olt_mac.mod := { echo  /home/dev/Nuclei/linux_sdk/linux/drivers/net/ethernet/fsl/epon_olt_mac.o; echo; } > /home/dev/Nuclei/linux_sdk/linux/drivers/net/ethernet/fsl/epon_olt_mac.mod

@@ -1,0 +1,58 @@
+#!/bin/sh
+# udhcpc script edited by Tim Riker <Tim@Rikers.org>
+
+RESOLV_CONF="/etc/resolv.conf"
+
+[ -n "$1" ] || { echo "Error: should be called from udhcpc"; exit 1; }
+
+NETMASK=""
+if command -v ip >/dev/null; then
+	[ -n "$subnet" ] && NETMASK="$subnet"
+else
+	[ -n "$subnet" ] && NETMASK="netmask $subnet"
+fi
+BROADCAST="broadcast +"
+[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+
+case "$1" in
+	deconfig)
+		echo "Setting IP address 0.0.0.0 on $interface"
+		#if command -v ip >/dev/null; then
+		#	ip addr flush dev $interface
+		#else
+		#	ifconfig $interface 0.0.0.0
+		#fi
+		/bin/echo -n > /tmp/ipaddress
+		;;
+
+	renew|bound)
+		echo "Setting IP address $ip on $interface"
+		#if command -v ip >/dev/null; then
+		#	ip addr add $ip$NETMASK $BROADCAST dev $interface
+		#else
+		#	ifconfig $interface $ip $NETMASK $BROADCAST
+		#fi
+
+		/bin/cp /proc/uptime /tmp/lan_uptime
+
+		echo "ifconfig $interface $ip $NETMASK $BROADCAST > /tmp/iprun"
+		#/bin/echo "ifconfig $interface $ip $NETMASK $BROADCAST" > /tmp/iprun
+		/bin/echo "/sbin/ifconfig $interface $ip netmask $NETMASK"  > /tmp/iprun
+		/bin/echo -n "$ip" > /tmp/ipaddress
+
+		/bin/echo -n "" > /tmp/iprouter
+		if [ -n "$router" ] ; then
+			for i in $router ; do
+				#/sbin/route add default gw $i dev $interface > /dev/null 2>&1
+				/bin/echo "$i" >> /tmp/iprouter
+			done
+		fi
+
+		/bin/echo -n "" > $RESOLV_CONF
+		for i in $dns ; do
+			/bin/echo nameserver $i >> $RESOLV_CONF
+		done
+		;;
+esac
+
+exit 0

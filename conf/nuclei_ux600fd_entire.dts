@@ -1,0 +1,191 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/* Copyright (c) 2020 Nuclei System Technologies */
+
+/* Clock frequency (in Hz) of the PCB crystal for rtcclk */
+/*#define RTCCLK_FREQ		32768*/
+
+/dts-v1/;
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <2>;
+	compatible = "nuclei,ux600fd";
+	model = "nuclei,ux600fd";
+
+	chosen {
+		bootargs = "earlycon=sbi console=ttySIF0";
+		stdout-path = "serial0";
+	};
+
+	aliases {
+		serial0 = &uart0;
+		serial1 = &uart1;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		timebase-frequency = <48828>;
+		
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			reg = <0>;
+			status = "okay";
+			compatible = "riscv";
+			riscv,isa = "rv64imafdc";
+			mmu-type = "riscv,sv39";
+			clock-frequency = <400000000>;
+		
+			cpu0_intc: interrupt-controller {
+				#interrupt-cells = <1>;
+				interrupt-controller;
+				compatible = "riscv,cpu-intc";
+			};
+		};
+	};
+
+	memory@41000000 {
+		device_type = "memory";
+		reg = <0x0 0x41000000 0x0 0xf000000>;
+	};
+
+	soc {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		compatible = "nuclei,ux600fd", "simple-bus";
+		ranges;
+	};
+
+	hfclk: hfclk {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <200000000>;
+		clock-output-names = "hfclk";
+	};
+ 
+ 	hfclk2: hfclk2 {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <100000000>;
+		clock-output-names = "hfclk2";
+	};
+
+	console {
+		compatible = "sbi,console";
+	};
+
+	plic0: interrupt-controller@8000000 {
+		#interrupt-cells = <1>;
+		compatible = "riscv,plic0";
+		interrupt-controller;
+		riscv,ndev = <53>;
+		interrupts-extended =
+		<&cpu0_intc 11 &cpu0_intc 9>;
+		reg = <0x0 0x8000000 0x0 0x4000000>;
+	};
+
+	uart0: serial@10013000 {
+		compatible = "sifive,uart0";
+		reg = <0x0 0x10013000 0x0 0x1000>;
+		interrupt-parent = <&plic0>;
+		interrupts = <2>;
+		clocks = <&hfclk2>;
+		status = "okay";
+	};
+
+	uart1: serial@10012000 {
+		compatible = "sifive,uart0";
+		reg = <0x0 0x10012000 0x0 0x1000>;
+		interrupt-parent = <&plic0>;
+		interrupts = <3>;
+		clocks = <&hfclk2>;
+		status = "disabled";
+	};
+  
+	qspi0: spi@10014000 {
+		compatible = "sifive,spi0";
+		reg = <0x0 0x10014000 0x0 0x1000>;
+		interrupt-parent = <&plic0>;
+		interrupts = <5>;
+		clocks = <&hfclk2>;
+  		num-cs = <1>;
+  		#address-cells = <1>;
+  		#size-cells = <0>;
+		status = "okay";
+
+		flash@0 { 	
+  			compatible = "Macronix,mx25u51245g","jedec,spi-nor";
+			reg = <1>;
+			spi-tx-bus-width = <1>;
+			spi-rx-bus-width = <1>;
+			spi-max-frequency = <100000000>;
+  			#address-cells = <1>;
+  			#size-cells = <1>; 
+			//m25p,fast-read;
+			partition@0 {
+				reg = <0x00000000 0x01800000>;
+				label = "linux_min";
+			};
+
+			partition@1800000 {
+				reg = <0x01800000 0x02800000>;
+				label = "rootfs_jffs2";
+			};
+		};
+	};
+
+  	qspi2: spi@10016000 {
+		compatible = "sifive,spi0";
+		reg = <0x0 0x10016000 0x0 0x1000>;
+		interrupt-parent = <&plic0>;
+		interrupts = <6>;
+		clocks = <&hfclk>;
+		num-cs = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "okay";
+  
+  		mmc@0 {
+  			compatible = "mmc-spi-slot";
+  			reg = <0>;
+  			spi-max-frequency = <20000000>;
+  			voltage-ranges = <3300 3300>;
+  			disable-wp;
+		};
+	};
+  
+	mac: ethernet@67800000 {
+		compatible = "fsl,fsl-mac";
+		reg = <0x0 0x67800000 0x0 0x1000>;
+		interrupt-parent = <&plic0>;
+		interrupts = <10>,<11>,<12>;
+		clocks = <&hfclk>;
+		num-cs = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "okay";
+	};	
+
+	gpio: gpio@10011000 {
+		compatible = "sifive,gpio0";
+		interrupt-parent = <&plic0>;
+		interrupts = <1>;
+		reg = <0x0 0x10011000 0x0 0x1000>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		interrupt-controller;
+		#interrupt-cells = <2>;
+		clocks = <&hfclk>;
+		status = "okay";
+	};
+
+	i2c0: ocores@10018000 {
+		compatible = "opencores,i2c-ocores";
+		#address-cells = <1>;
+		#size-cells = <0>;     
+		interrupt-parent = <&plic0>;
+		interrupts = <4>;
+		reg = <0x0 0x10018000 0x0 0x1000>;
+		clock-frequency = <25000000>;
+	};    
+};

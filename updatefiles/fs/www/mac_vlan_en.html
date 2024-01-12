@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>MAC VLAN</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+	<script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+	<script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+	<script language="javascript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+		var count = 0;
+
+		function init() {
+			var cf = document.forms[0];
+			var t = 0, b = 0, i = 0, tmp, n = 0, a = 0;
+			var umac = new Array();
+			var ports = cf.port_bits.value;
+			var gPorts = cf.g_port_bits.value;
+			var strPort;
+
+			show_language_flag();
+			umac = cf.h_mac_vlan.value.split(";");
+
+			for (i = 0; i < umac.length - 1; i++) {
+				list_add_mac_vlan(0, umac[i]);
+			}
+
+			set_MAC_vlan_port();
+
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+		}
+
+		function additem() {
+			var cf = document.forms[0];
+			var msg = "", mac = "";
+			var port_maps = 0;
+			var i, n = 0;
+			var flag = false;
+			var overwrite_vlan = 0;
+			var mac_vlan_rule = "";
+			var umap = new Array();
+
+			cf.mac_address.value = cf.mac_address.value.toUpperCase();
+			cf.mac_address.value = cf.mac_address.value.replace(/:/g, "");
+			cf.mac_address.value = cf.mac_address.value.replace(/-/g, "");
+
+			if (badMac(cf.mac_address, false) == true) {
+				msg += fwd_err_mac;
+				return checkMsg(msg);
+			}
+
+			if (isMulticastMac(cf.mac_address.value))//unicast
+				msg += "Please add unicast address\n";
+
+			if (cf.mac_vlan_port_list.value == 0)
+				msg += msg_no_select_port;
+
+			msg += checkInt(cf.mac_vlan_vid, "VID", 1, 4094, true);
+
+			umap = cf.h_vlan_map.value.split(";");
+			for (i = 0; i < umap.length - 1; i++) {
+				if (cf.mac_vlan_port_list.value == parseInt(umap[i].split(":")[0], 10)) {
+					msg += "this port has configured vlan map，please delete the vlan map item"
+					break;
+				}
+			}
+
+			if (msg != "")
+				return checkMsg(msg);
+
+			mac_vlan_rule = cf.mac_address.value + ":" + cf.mac_vlan_port_list.value + ":" + cf.mac_vlan_vid.value;
+
+			for (i = 1; i < cf.mac_vlan_table.options.length; i++) {
+				if (cf.mac_address.value == cf.mac_vlan_table.options[i].value.split(":")[0] && cf.mac_vlan_port_list.value == cf.mac_vlan_table.options[i].value.split(":")[1]) {
+					flag = confirm("MAC VLAN record already exists,overwrite it?\n");
+					if (flag == true) {
+						overwrite_vlan = i;
+						break;
+					}
+					else
+						return false;
+				}
+			}
+
+			if (!overwrite_vlan) {
+				if (cf.mac_vlan_table.options.length - 1 >= 100)
+					msg += "Supports the configuration of up to 100 MAC VLAN\n"
+
+				if (msg != "")
+					return checkMsg(msg);
+			}
+
+			list_add_mac_vlan(overwrite_vlan, mac_vlan_rule);
+
+			cf.mac_address.value = "";
+			cf.mac_vlan_port_list.value = 0;
+			cf.mac_vlan_vid.value = "";
+
+		}
+
+		function delitem() {
+			var cf = document.forms[0];
+			var pos = cf.mac_vlan_table.selectedIndex;
+
+			if (pos > 0) {
+				list_del_mac_vlan(pos);
+			}
+		}
+
+		function list_add_mac_vlan(overwrite_vlan, mac_vlan) {
+			var cf = document.forms[0];
+			var mac = new Array();
+			mac = mac_vlan.split(":");
+			var ports = cf.port_bits.value;
+			var port_map_array = cf.port_map.value.split(";");
+
+			if (0 == overwrite_vlan)
+				tmp = "-" + (count + 1);
+			else
+				tmp = "-" + (overwrite_vlan);
+
+			for (i = fucCheckLength(tmp); i < 7; i++)
+				tmp += "-";
+			if (i == 7)
+				tmp += "----------------";//index
+
+			tmp += mac[0].substring(0, 2)
+				+ "-" + mac[0].substring(2, 4)
+				+ "-" + mac[0].substring(4, 6)
+				+ "-" + mac[0].substring(6, 8)
+				+ "-" + mac[0].substring(8, 10)
+				+ "-" + mac[0].substring(10, 12);
+			tmp += "------------";//mac
+
+			//port
+			tmp += ("ge" + mac[1]);
+
+			for (i = 0; i < 16 - mac[1].length; i++)
+				tmp += "-";
+
+			//vid
+			tmp += mac[2];
+
+			if (0 == overwrite_vlan) {
+
+				cf.mac_vlan_table.options.add(new Option(tmp, mac_vlan));
+				count++;
+			}
+			else {
+				cf.mac_vlan_table.options[overwrite_vlan].value = mac_vlan;
+				cf.mac_vlan_table.options[overwrite_vlan].innerHTML = tmp;
+			}
+		}
+
+		function list_del_mac_vlan(Index) {
+			var cf = document.forms[0];
+
+			cf.mac_vlan_table.remove(Index);
+			count--;
+		}
+
+		function set_MAC_vlan_port() {
+			var cf = document.forms[0];
+			var ports = cf.port_bits.value;
+			var i = 1;
+
+			while (ports) {
+				if (ports & 1) {
+					cf.mac_vlan_port_list.options.add(new Option("ge" + i, i));
+					i++;
+				}
+
+				ports >>= 1;
+			}
+
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+
+			setDisabled(true, cf.mac_address);
+			setDisabled(true, cf.mac_vlan_port_list);
+			setDisabled(true, cf.mac_vlan_vid);
+			setDisabled(true, cf.Add);
+			setDisabled(true, cf.Delete);
+			setDisabled(true, cf.Save);
+			setDisabled(true, cf.Cancel);
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			cf.h_mac_vlan.value = "";
+
+			for (i = 1; i < cf.mac_vlan_table.options.length; i++) {
+				cf.h_mac_vlan.value += cf.mac_vlan_table.options[i].value + ";";
+			}
+		}
+
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+									href="https://milkv.io/">
+									<span class="showbtn3">Website</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+										class="showbtn4">中文版</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">Logout</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td width="290" height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current
+									Page&gt;&gt;</strong><span class="style4"> Link Layer </span><strong
+									class="style4">&gt;&gt;</strong><span class="style3">MAC VLAN</span></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td width="200" height="25" class="table_left">&nbsp;&nbsp;source MAC address</td>
+				<td align="left" class="table_right">&nbsp;&nbsp;
+					<input type="text" name="mac_address" />
+					<span class="table_left" id="range">&nbsp;(HH-HH-HH-HH-HH-HH)</span>
+				</td>
+			</tr>
+			<tr>
+				<td width="200" height="25" class="table_left">&nbsp;&nbsp;Port</td>
+				<td align="left" class="table_right">&nbsp;&nbsp;
+					<!-- <input type="text" name="mac_vlan_port" maxlength="4"/>
+					<span class="table_left"></span> -->
+					<select name="mac_vlan_port_list" class="select1">
+						<option value="0">not selected</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td height="25" class="table_left">&nbsp;&nbsp;VID</td>
+				<td class="table_right">&nbsp;&nbsp;
+					<input type="text" name="mac_vlan_vid" maxlength="4" />
+					<span class="table_left">&nbsp;(1~4094)</span>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="button" name="Add" value="Add" class="showbtn7" onclick="return additem()" />
+						<input type="button" name="Delete" value="Delete" class="showbtn7" onclick="return delitem()" />
+						<input type="submit" name="Save" value="Save" class="showbtn7" onclick="return checkData()" />
+						<input type="button" name="Cancel" value="Cancel"
+							onClick="location.href='setup.cgi?next_file=mac_vlan_en.html'" class="showbtn7">
+					</span>
+				</td>
+			</tr>
+		</table>
+
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table width="1001" border="0" cellspacing="1" cellpadding="0">
+						<tr class="table_right">
+							<td colspan="7">
+								<select name="mac_vlan_table" size="25"
+									style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+									<option value="0">--Serial numer---------MAC
+										address------------------Port--------------VID----------------------------------------------------------------------
+									</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="7" height="4">
+								<hr size="1" />
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<input type="hidden" name="enableEnglish" value="@enableEnglish#">
+		<input type="hidden" name="cpu_port" value="@cpu_port#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+
+		<input type="hidden" name="h_mac_vlan" value="@h_mac_vlan#">
+		<input type="hidden" name="h_vlan_map" value="@h_vlan_map#">
+
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="mac_vlan_en.html">
+		<input type="hidden" name="next_file" value="mac_vlan_en.html">
+
+	</form>
+</body>
+
+</html>

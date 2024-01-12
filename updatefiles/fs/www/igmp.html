@@ -1,0 +1,413 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>IGMP侦听</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+    <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+
+        function loadXMLDoc(url) //基于AJAX 的无刷方式请求建立XMLHttpRequest 对象
+        {
+            xmlhttp = null;
+            if (window.XMLHttpRequest) {
+                xmlhttp = new XMLHttpRequest();
+            }
+            else if (window.ActiveXObject) {
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            if (xmlhttp != null) {
+                xmlhttp.open("GET", url, true);
+
+                xmlhttp.onreadystatechange = speed_Change;
+                xmlhttp.setRequestHeader("If-Modified-Since", "0");
+                xmlhttp.send(null);
+
+            }
+            else {
+                alert("Your browser does not support XMLHTTP.");
+            }
+        }
+
+        function speed_Change() {
+            if (xmlhttp.readyState == 4) {
+                if (xmlhttp.status == 200) {
+                    alert("组播资源繁忙，请稍后重试！\n");
+                    return true;
+                }
+
+                checkData();
+            }
+        }
+
+        function init() {
+            var cf = document.forms[0];
+            var umac = new Array();
+            var i, t = 0, tmp = "", a = 0, b = 0, n = 0, count = 0;
+            var ports = cf.port_bits.value;
+            var gPorts = cf.g_port_bits.value;
+            var objTb = document.getElementById("portlist");
+            var objTr1, objTr2, objTmp;
+            var flag = true;
+            var strPort;
+
+            comCreateElement(ports, gPorts, objTb, "checkbox", "igmp_port", undefined, "igmp_port", undefined, "margin-bottom:2px", 1);
+            a = 0; i = 0; ports = cf.port_bits.value;
+            while (ports) {
+                if (ports & 1) {
+                    if (cf.snoop_port.value & (1 << i))
+                        cf.igmp_port[a].checked = true;
+                    a++;
+                }
+                ports >>= 1;
+                i++;
+            }
+            ports = cf.port_bits.value;
+            if (parseInt(cf.snoop_port.value & ports) == ports)
+                cf.check_all.value = "取消全选";
+            else
+                cf.check_all.value = "全选";
+
+            cf.multimac_list.value = cf.multimac_list.value.toUpperCase();
+            umac = cf.multimac_list.value.split(";");
+            var n = 0;
+            while (t < (umac.length - 1)) {
+                var mac = new Array();
+                mac = umac[t].split(":");
+                var mac_bits = (parseInt(mac[1]) & 0xFFFFFF);
+
+                if (mac_bits == 0) {
+                    t++;
+                    continue;
+                }
+
+                tmp = "---" + (n + 1);
+                for (i = fucCheckLength(tmp); i < 7; i++)
+                    tmp += "-";
+                if (i == 7)
+                    tmp += "--------";
+
+                tmp += mac[0].substring(0, 2) + "-" + mac[0].substring(2, 4) + "-" + mac[0].substring(4, 6)
+                    + "-" + mac[0].substring(6, 8) + "-" + mac[0].substring(8, 10) + "-" + mac[0].substring(10, 12);
+                tmp += "----------";
+
+                if (mac[3] == 1)
+                    tmp += "固定";
+                else
+                    tmp += "学习";
+
+                tmp += "----------";
+
+                tmp += mac[2];
+                for (i = mac[2].length; i < 4; i++)
+                    tmp += "-";
+                tmp += "--------";
+
+                ports = cf.port_bits.value;
+                gPorts = cf.g_port_bits.value;
+                a = 0; b = 0; i = 0;
+
+                while (ports) {
+                    if (ports & 1) {
+                        if (gPorts & 1)
+                            strPort = "G" + (++a);
+                        else
+                            strPort = "XG" + (++b);
+                        if (mac_bits & 1)
+                            tmp += (strPort + "　");
+                    }
+                    i++;
+                    ports >>= 1;
+                    gPorts >>= 1;
+                    mac_bits >>= 1;
+                }
+                cf.forward_list.options.add(new Option(tmp, mac[0]));
+                t++;
+                n++;
+            }
+            dataToVisible(cf);
+            if (cf.loader.value != "admin")
+                disable_all_intput();
+            else
+                setSnooping();
+        }
+
+        function setSnooping() {
+            var i;
+            var cf = document.forms[0];
+            var dflage = (getRadioCheckedValue(cf.snoop_enable) == "disable");
+
+            setDisabled(dflage, cf.querier_enable[0], cf.querier_enable[1]);
+            setQuery();
+            setDisabled(dflage, cf.snoop_age);
+            for (i = 0; i < cf.igmp_port.length; i++)
+                setDisabled(dflage, cf.igmp_port[i]);
+            setDisabled(dflage, cf.check_all);//de.s modified for button control 2010.03.30
+        }
+
+        function setQuery() {
+            var i;
+            var cf = document.forms[0];
+            var dflag = (getRadioCheckedValue(cf.snoop_enable) == "disable");
+            var dflag1 = (getRadioCheckedValue(cf.querier_enable) == "disable");
+
+            if ((dflag == true) || (dflag1 == true))
+                dflag = true;
+
+            setDisabled(dflag, cf.snoop_interval);
+        }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.snoop_enable[0], cf.snoop_enable[1]);
+            setDisabled(true, cf.querier_enable[0], cf.querier_enable[1]);
+            setDisabled(true, cf.snoop_interval, cf.snoop_age);
+            setDisabled(true, cf.Save, cf.Cancel);
+            setDisabled(true, cf.check_all);//de.s modified for button control 2010.03.30
+            for (var i = 0; i < cf.igmp_port.length; i++)
+                setDisabled(true, cf.igmp_port[i]);
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "", port_maps = 0;
+            var a, i;
+            var ports = cf.port_bits.value;
+
+            var dflag = (getRadioCheckedValue(cf.snoop_enable) == "disable");
+            var dflag1 = (getRadioCheckedValue(cf.querier_enable) == "disable");
+
+
+            if ((dflag == false) && cf.h_gmrp_enable.value == 1)
+                msg += "请先禁用GMRP功能！";
+
+            if ((dflag == false) && (dflag1 == false))
+                msg += checkInt(cf.snoop_interval, msg_igmp_interval, 60, 1000, true);
+
+            if (dflag == false)
+                msg += checkInt(cf.snoop_age, msg_igmp_age, 120, 5000, true);
+
+            if ((dflag == false) && (dflag1 == false) && parseInt(cf.snoop_interval.value) > parseInt(cf.snoop_age.value))
+                msg += "查询间隔应小于或等于组员生存时间，请确认！";
+
+
+            a = 0; i = 0;
+            while (ports) {
+                if (ports & 1) {
+                    if (cf.igmp_port[a].checked == true)
+                        port_maps |= 1 << cf.igmp_port[a].value;
+                    a++;
+                }
+                ports >>= 1;
+                i++;
+            }
+
+            cf.snoop_port.value = port_maps;
+
+            dataToHidden(cf);
+
+            if (!checkMsg(msg))
+                return false;
+
+            cf.submit();
+
+        }
+
+        function checkAllPorts() {
+            var cf = document.forms[0];
+            var i = 0;
+
+            if (cf.check_all.value === "全选") {
+                cf.check_all.value = "取消全选";
+                for (i = 0; i < cf.igmp_port.length; i++)
+                    cf.igmp_port[i].checked = true;
+            }
+            else {
+                cf.check_all.value = "全选";
+                for (i = 0; i < cf.igmp_port.length; i++)
+                    cf.igmp_port[i].checked = false;
+            }
+        }
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">网站</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span
+                                        class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+                                        class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td width="274" height="25" class="table_title"><strong
+                                    class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+                                    class="style4">二层特性</span><strong class="style4">&gt;&gt;</strong><span
+                                    class="style3">IGMP侦听</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="0">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;IGMP侦听</td>
+                            <td width="869" height="25" colspan="9" align="left" valign="middle">&nbsp;
+                                <input type="radio" name="snoop_enable" value="enable" autocomplete="off"
+                                    onClick="setSnooping()">
+                                启用
+                                &nbsp;
+                                <input type="radio" name="snoop_enable" value="disable" autocomplete="off"
+                                    onClick="setSnooping()">
+                                禁用
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="15%" height="25" class="table_left">&nbsp;&nbsp;IGMP 查询</td>
+                            <td width="85%" height="25" class="table_right">&nbsp;
+                                <input type="radio" name="querier_enable" value="enable" autocomplete="off"
+                                    onClick="setQuery()" />
+                                启用
+                                &nbsp;
+                                <input type="radio" name="querier_enable" value="disable" autocomplete="off"
+                                    onClick="setQuery()" />
+                                禁用
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;IGMP 查询间隔</td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input type="text" name="snoop_interval" maxlength="4" class="input_txt"
+                                    value="@snoop_interval#">
+                                秒 (有效值 60-1000)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp;&nbsp;组成员生存时间</td>
+                            <td height="25" class="table_right">&nbsp;
+                                <input type="text" name="snoop_age" maxlength="4" class="input_txt" value="@snoop_age#">
+                                秒 (有效值 120-5000)
+                            </td>
+                        </tr>
+                        <tr style="display:none">
+                            <td height="25" class="table_left">&nbsp;&nbsp;未知多播组转发列表</td>
+                            <td height="25" class="table_right">
+                                <table border="0" cellspacing="0" id="portlist">
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellspacing="0" cellpadding="0">
+                        <tr class="td11">
+                            <td colspan="7"><select name="forward_list" size="25" id="uselect"
+                                    style="width: 1001px;-webkit-appearance: none; box-shadow: none !important;margin:1px;font-size:12px;font-family:Courier New,sans-serif; color:#333333;">
+                                    <option value="0">
+                                        --序号---------------MAC地址---------------类型----------VID---------端口----------------------------------------------------------------------------------------
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+                        <input type="button" name="Save" value="配置"
+                            onClick="return loadXMLDoc('/tmp/multicast_delall');" class="showbtn6">&nbsp;
+                        <input type="button" name="Refresh" value="刷新"
+                            onClick="location.href='setup.cgi?next_file=igmp.html'" class="showbtn6">&nbsp;
+                        <input type="button" name="Cancel" value="取消"
+                            onClick="location.href='setup.cgi?next_file=igmp.html'" class="showbtn6">
+                    </span>
+                </td>
+            </tr>
+            </td>
+            </tr>
+        </table>
+        <input type="hidden" name="switch_port" value="@switch_port#">
+        <input type="hidden" name="h_snoop_enable" value="@h_snoop_enable#">
+        <input type="hidden" name="h_querier_enable" value="@h_querier_enable#">
+        <input type="hidden" name="h_gmrp_enable" value="@h_gmrp_enable#">
+
+        <input type="hidden" name="snoop_port" value="@snoop_port#">
+        <input type="hidden" name="multimac_list" value="@multimac_list#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="igmp.html">
+        <input type="hidden" name="next_file" value="igmp.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+        <input type="hidden" name="port_bits" value="@port_bits#">
+        <input type="hidden" name="g_port_bits" value="@g_port_bits#">
+    </form>
+</body>
+
+</html>

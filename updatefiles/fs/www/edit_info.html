@@ -1,0 +1,132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <title>修改系统信息</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+        <link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+		<!--[if lte IE 6]>
+		<link href="include/ie6_css_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+		<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+		<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+		<script language="JavaScript" type="text/javascript" src="js/func.js"></script> 
+		<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+        <script language="JavaScript">
+            <!--
+
+            function disable_all_intput()
+            {
+                var cf = document.forms[0];
+
+                setDisabled(true,cf.Save,cf.Cancel);
+                setDisabled(true,cf.device_name);
+				setDisabled(true,cf.device_loc);
+                setDisabled(true,cf.device_sn);
+                setDisabled(true,cf.device_desp);
+                setDisabled(true,cf.device_cont);
+            }
+
+            function checkData()
+            {
+                var cf = document.forms[0];
+                var msg = "";
+
+                if(is_Illegal(cf.device_name.value)==false)
+                    msg += addstr(msg_invalid_input, msg_device_name);
+
+                if(is_Illegal(cf.device_loc.value)==false && (cf.device_loc.value) == null)
+                    msg += addstr(msg_invalid_input, msg_device_loc);
+
+                if(is_Illegal(cf.device_sn.value)==false)
+                msg += addstr(msg_invalid_input, msg_device_sn);
+
+                if(is_Illegal(cf.device_desp.value)==false)
+                msg += addstr(msg_invalid_input, msg_device_desp);
+
+                if(isIllegalwithAt(cf.device_cont.value)==false)
+            	msg += addstr(msg_invalid_cont, msg_device_cont);
+
+                dataToHidden(cf);
+                return checkMsg(msg);
+            }
+
+//-->
+</script>
+</head>
+<body style="margin:0"  onLoad="">
+<form method="POST" action="setup.cgi" onLoad="init()">
+    
+<table width="1002"  border="0" align="center" cellspacing="0">
+	<tr>
+		<td height="25" align="left" valign="middle">
+			<table width="1002"  border="0" cellspacing="0">
+				<tr>
+					<td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span class="style4">系统管理</span><strong class="style4">&gt;&gt;</strong><span class="style3">修改系统信息</span></td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr height="8">
+		<td width="1001"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+	</tr>
+	<tr align="left" valign="top">
+		<td height="25" align="left">
+			<table width="1001"  border="0" cellpadding="0" cellspacing="1">
+				<tr>
+					<td  width="150" height="25" class="table_left">&nbsp;&nbsp;设备名称</td>
+					<td  class="table_right">&nbsp;
+						<input type="text" name="device_name" value="" class="input_user" maxlength="32"/>
+					</td>
+				</tr>
+				<tr>
+					<td  width="150" height="25" class="table_left">&nbsp;&nbsp;设备位置</td>
+					<td  class="table_right">&nbsp;
+						<input type="text" name="device_loc" value="" class="input_user" maxlength="32"/>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" height="25" class="table_left">&nbsp;&nbsp;设备编号</td>
+					<td  class="table_right">&nbsp;
+						<input type="text" name="device_sn" value="" class="input_user" maxlength="32"/>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" height="25" class="table_left">&nbsp;&nbsp;设备描述</td>
+                    <td  class="table_right">&nbsp;
+						<input type="text" name="device_desp" value="" class="input_user" maxlength="32"/>
+					</td>
+				</tr>
+				<tr>
+					<td width="150" height="25" class="table_left">&nbsp;&nbsp;研发代号</td>
+                    <td  class="table_right">&nbsp;
+						<input type="text" name="rd_code" value="" class="input_user" maxlength="32"/>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr height="8">
+		<td width="1001"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+	</tr>
+	
+	<tr height="8">
+		<td width="1001"><div style="overflow:hidden;background:#969594;height:1px;"></div></td>
+	</tr>
+	<tr align="left" valign="top">
+		<td height="25" align="center" valign="top" style="padding-top:5px">
+			<span style="padding-top:5px">
+				<input type="Submit" name="Save" value="配置" onClick="return checkData();"  class="showbtn6">&nbsp;
+				<input type="button" name="Cancel" value="取消" onClick="location.href='setup.cgi?next_file=view.html'"  class="showbtn6">
+			</span>
+		</td>
+	</tr>
+</table>
+
+<input type="hidden" name="todo" value="save">
+<input type="hidden" name="this_file" value="edit_info.html">
+<input type="hidden" name="next_file" value="view.html">
+
+</form>
+</body>
+</html>

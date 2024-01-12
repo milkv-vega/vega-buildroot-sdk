@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<title>PoE</title>
+	<style type="text/css">
+		.aa {
+			color: #CCCCCC
+		}
+	</style>
+	<meta http-equiv="Content-Type" content="text/html; charset=gb2312">
+	<link href="include/css_imx28x.css" rel="stylesheet" type="text/css" />
+	<script language="JavaScript" type="text/javascript" src="js/msg_mw_cn.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/linux_imx28x.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func.js"></script>
+	<script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+	<script language="JavaScript">
+
+		var ephy_count;
+		var portIDs = new Array();
+
+		function poe_init() {
+			var cf = document.forms[0];
+			var table = document.getElementById("poelist");
+			var startIndex = 0, i = 0, j = 0, k = 0, a = 0, b = 0, m = 0, n = 0;
+			var HTMLStr, strPort;
+			var newRow;
+			var newCell;
+			var flag = 0;
+			var ports = cf.port_bits.value;
+			var port_type;
+			var portId = 0;
+
+			while (ports) {
+				if (ports & 1) {
+					port_type = parseInt(cf.port_type.value.substring(k, k + 1));
+
+					switch (port_type) {
+						case 2:
+							strPort = "G" + (++a);
+							flag = 1;
+							portIDs[m] = portId;
+							m++;
+							break;
+						case 3:
+						case 4:
+						case 5:
+							a++;
+							flag = 0;
+							break;
+						default:
+							break;
+					}
+					portId++;
+					ports >>= 1;
+					k++;
+					if (flag == 0) {
+						continue;
+					} else {
+						newRow = table.insertRow(startIndex + n);
+						if (n % 2 == 0)
+							newRow.className = "table_black";
+						else
+							newRow.className = "table_right";
+
+						HTMLStr = "<div style=\"width:53px\" align=\"center\">" + strPort + "</div>";
+						newCell = newRow.insertCell(0);
+						newCell.innerHTML = HTMLStr;
+
+						HTMLStr = "<div style=\"width:80px\" align=\"center\">" + "电口" + "</div>";
+						newCell = newRow.insertCell(1);
+						newCell.innerHTML = HTMLStr;
+
+						HTMLStr = "<div style=\"width:344px\" align=\"center\">" + "---" + "</div>";
+						newCell = newRow.insertCell(2);
+						newCell.innerHTML = HTMLStr;
+
+						HTMLStr = "<input style=\"width:53px\" type='checkbox' name='poe_enable" + n + "' onClick='set_poe_enable()' align='center'/>";
+						newCell = newRow.insertCell(3);
+						newCell.innerHTML = HTMLStr;
+
+						n++;
+						continue;
+					}
+				}
+
+				ports >>= 1;
+				k++;
+			}
+			ephy_count = n;
+
+			var t = 0;
+			var poes = new Array();
+			var port_poe = new Array();
+
+			poes = cf.poe.value.split(";");
+			for (t = 0; t < poes.length - 1; t++) {
+				port_poe = poes[t].split(":");
+				if (port_poe[1] == 1) {
+					eval("cf.poe_enable" + t).checked = true;
+				}
+			}
+		}
+
+		function set_poe_enable() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			for (i = 0; i < ephy_count; i++) {
+				setDisabled(false, eval("cf.poe_enable" + i));
+			}
+		}
+
+		function disable_all_intput() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			for (i = 0; i < ephy_count; i++) {
+				setDisabled(true, eval("cf.poe_enable" + i));
+			}
+		}
+
+		function checkData() {
+			var cf = document.forms[0];
+			var i = 0;
+
+			cf.poe.value = "";
+
+			for (i = 0; i < ephy_count; i++) {
+				cf.poe.value += portIDs[i] + ":" + ((eval("cf.poe_enable" + i).checked == true) ? 1 : 0) + ";";
+			}
+		}
+
+		function init() {
+			var cf = document.forms[0];
+			poe_init();
+			dataToVisible(cf);
+
+			if (cf.loader.value != "admin")
+				disable_all_intput();
+			else
+				set_poe_enable();
+		}
+	</script>
+</head>
+
+<body style="margin:0" onLoad="init()">
+	<form method="POST" action="setup.cgi">
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td>
+					<table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+						<tr>
+							<td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+							<td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF">
+								<a href="https://milkv.io/">
+									<span class="showbtn3">网站</span>
+								</a><a href="./setup.cgi?todo=changeLanguage"><span
+										class="showbtn4">English</span></a><a href="./setup.cgi?todo=logout"><span
+										class="showbtn3">退出</span><span class="showbtn5">&times;</span></a>
+								<br>
+								<span class="style6">访问IP地址：@clinet_ip# &nbsp;MAC地址：@clinet_mac#</p>
+									</spen>
+							</td>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+						<tr>
+							<table width="1002">
+								<script language="JavaScript1.2">init_menu();</script>
+							</table>
+						</tr>
+						<tr>
+							<td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="1002" border="0" align="center" cellspacing="0">
+			<tr>
+				<td height="25" align="left" valign="middle">
+					<table width="1002" border="0" cellspacing="0">
+						<tr>
+							<td height="25" class="table_title"><strong
+									class="style4">&nbsp;&nbsp;您当前访问的页面&gt;&gt;</strong><span
+									class="style4">端口配置</span><strong class="style4">&gt;&gt;</strong><span
+									class="style3">PoE</span></td>
+						</tr>
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table width="1002" height="100%" align="center" cellpadding="0" cellspacing="1">
+						<tr class="td2">
+							<td width="10%" height="25" align="center" valign="middle">端口号</td>
+							<td width="15%" height="25" align="center" valign="middle">接口类型</td>
+							<td width="65%" height="25" align="center" valign="middle">保留</td>
+							<td width="10%" height="25" align="center" valign="middle">启用</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25">
+					<table id="poelist" width="1002" border="0" cellpadding="0" cellspacing="1"
+						style="font-size:12px; font-family:Arial, Helvetica, sans-serif">
+
+					</table>
+				</td>
+			</tr>
+			<tr height="8">
+				<td width="1001">
+					<div style="overflow:hidden;background:#969594;height:1px;"></div>
+				</td>
+			</tr>
+			<tr align="left" valign="top">
+				<td height="25" align="center" valign="top" style="padding-top:5px">
+					<span style="padding-top:5px">
+						<input type="Submit" name="Save" value="配置" onClick="return checkData();"
+							class="showbtn6">&nbsp;
+						<input type="button" name="Cancel" value="取消" class="showbtn6"
+							onClick="location.href='setup.cgi?next_file=poe.html'">
+					</span>
+				</td>
+			</tr>
+		</table>
+
+		<input type="hidden" name="port_type" value="@port_type#">
+		<input type="hidden" name="port_bits" value="@port_bits#">
+		<input type="hidden" name="g_port_bits" value="@g_port_bits#">
+		<input type="hidden" name="f_port_bits" value="@f_port_bits#">
+		<input type="hidden" name="poe" value="@poe#">
+		<input type="hidden" name="loader" value="@loader#">
+		<input type="hidden" name="todo" value="save">
+		<input type="hidden" name="this_file" value="poe.html">
+		<input type="hidden" name="next_file" value="poe.html">
+	</form>
+</body>
+
+</html>

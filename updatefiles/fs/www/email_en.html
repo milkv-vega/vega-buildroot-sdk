@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <title>Email Warning</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="include/css_en_imx28x.css" rel="stylesheet" type="text/css" />
+    <!--[if lte IE 6]>
+		<link href="include/ie6_css_en_imx28x.css" rel="stylesheet" type="text/css" />
+		<![endif]-->
+    <script language="javascript" type="text/javascript" src="js/msg_mw_en.js"></script>
+    <script language="javascript" type="text/javascript" src="js/linux_en_imx28x.js"></script>
+    <script language="javascript" type="text/javascript" src="js/func.js"></script>
+    <script language="JavaScript" type="text/javascript" src="js/func_ex.js"></script>
+    <script language="JavaScript">
+        < !-
+            function init() {
+                var cf = document.forms[0];
+
+                show_language_flag();
+                dataToVisible(cf);
+                //document.getElementById("logo").innerHTML = getLogoByType(cf.switch_type.value);
+
+                if (cf.mail_user.value.length > 0) {
+                    cf.mail_passwd.value = "********";
+                }
+
+                if (cf.loader.value != "admin")
+                    disable_all_intput();
+                else
+                    setAlert();
+            }
+
+        function disable_all_intput() {
+            var cf = document.forms[0];
+
+            setDisabled(true, cf.mail_enable[0], cf.mail_enable[1]);
+            setDisabled(true, cf.Save, cf.Cancel);
+            setDisabled(true, cf.mail_server, cf.mail_for_log, cf.mail_for_return);
+            setDisabled(true, cf.mail_user, cf.mail_passwd, cf.mail_intel_time, cf.sendmail);
+        }
+
+        function setAlert() {
+            var cf = document.forms[0];
+            var dflag = getRadioCheckedValue(cf.mail_enable) == "disable";
+            setDisabled(dflag, cf.mail_server, cf.mail_for_log, cf.mail_for_return);
+            setDisabled(dflag, cf.mail_user, cf.mail_passwd, cf.mail_intel_time, cf.sendmail);
+        }
+
+        function isIllegalmail(s) {
+            var reg = /^[0-9a-fA-F]*$/;
+
+            if (s.match(reg)) {
+                if (fucCheckLength(s) > 16)
+                    return false;
+                else
+                    return true;
+            }
+
+            return false;
+        }
+
+        function checkData() {
+            var cf = document.forms[0];
+            var msg = "";
+
+            if (getRadioCheckedValue(cf.mail_enable) == "enable") {
+                //msg += checkHostName(cf.mail_server, msg_mail_server);
+                //if(is_Illegal(cf.mail_user.value)==false)
+                //    msg += addstr(msg_invalid_num, msg_mail_user);
+                //if(isIllegal(cf.mail_passwd.value)==false)
+                //    msg += addstr(msg_invalid_num, msg_mail_passwd);
+                msg += checkMail(cf.mail_for_log, msg_email_in);
+                //msg+= checkMail(cf.mail_for_return, msg_email_re);
+            }
+
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+
+        function send_mail() {
+            var cf = document.forms[0];
+            var msg = "";
+
+            msg += checkHostName(cf.mail_server, msg_mail_server);
+            if (is_Illegal(cf.mail_user.value) == false)
+                msg += addstr(msg_invalid_num, msg_mail_user);
+            //if(isIllegal(cf.mail_passwd.value)==false)
+            //    msg += addstr(msg_invalid_num, msg_mail_passwd);
+            msg += checkMail(cf.mail_for_log, msg_email_in);
+            msg += checkMail(cf.mail_for_return, msg_email_re);
+            cf.todo.value = "send_mail";
+            //
+            dataToHidden(cf);
+            return checkMsg(msg);
+        }
+
+        //-->
+    </script>
+</head>
+
+<body style="margin:0" onLoad="init();">
+    <form method="POST" action="setup.cgi">
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="0" class="body">
+                        <tr>
+                            <td height="7" colspan="2" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <td id="logo" width="432" height="67" align="left" valign="top" bgcolor="#FFFFFF"></td>
+                            <td width="570" height="67" align="right" valign="bottom" bgcolor="#FFFFFF"> <a
+                                    href="https://milkv.io/">
+                                    <span class="showbtn3">Website</span>
+                                </a><a href="./setup.cgi?todo=changeLanguage"><span id='changeLanguage'
+                                        class="showbtn3">中文版</span></a>
+                                <a href="./setup.cgi?todo=logout"><span class="showbtn3">Logout</span><span
+                                        class="showbtn5">&times;</span></a>
+                                <br>
+                                <span class="style6">VISITOR IP：@clinet_ip# &nbsp;VISITOR MAC：@clinet_mac#</p>
+                                    </spen>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                        <tr>
+                            <table width="1002">
+                                <script language="JavaScript1.2">init_menu();</script>
+                            </table>
+                        </tr>
+                        <tr>
+                            <td height="7" colspan="2" align="left" bgcolor="#FFFFFF"></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="1002" border="0" align="center" cellspacing="0">
+            <tr>
+                <td height="25" align="left" valign="middle">
+                    <table width="1002" border="0" cellspacing="0">
+                        <tr>
+                            <td height="25" class="table_title"><strong class="style4">&nbsp;&nbsp;Current Page
+                                    &gt;&gt;</strong><span class="style4"> Remote Monitor </span><strong
+                                    class="style4">&gt;&gt;</strong><span class="style3"> Email Warning</span></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="left">
+                    <table width="1002" height="25" align="center" cellpadding="0" cellspacing="1">
+                        <tr align="left" valign="top" class="table_enable">
+                            <td height="25" width="150" valign="middle">&nbsp;&nbsp;Email Warning</td>
+                            <td height="25" colspan="9" align="left" valign="middle">&nbsp;
+                                <input type="radio" name="mail_enable" value="enable" autocomplete="off"
+                                    onClick="setAlert()">
+                                Enable
+                                &nbsp;
+                                <input type="radio" name="mail_enable" value="disable" autocomplete="off"
+                                    onClick="setAlert()">
+                                Disable
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="1002" border="0" cellpadding="0" cellspacing="1">
+                        <tr style="display: none">
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Email Server </td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="mail_server" maxlength="31" class="input_email"
+                                    value="@mail_server#" />
+                            </td>
+                        </tr>
+                        <tr style="display: none">
+                            <td height="25" class="table_left">&nbsp;&nbsp;Email User </td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="mail_user" maxlength="32" class="input_email"
+                                    value="@mail_user#" />
+                            </td>
+                        </tr>
+                        <tr style="display: none">
+                            <td height="25" class="table_left">&nbsp;&nbsp;Email Password </td>
+                            <td class="table_right">&nbsp;
+                                <input type="password" name="mail_passwd" maxlength="32" class="input_email"
+                                    value="@mail_passwd#" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="150" height="25" class="table_left">&nbsp;&nbsp;Recipient Address</td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="mail_for_log" maxlength="32" class="input_email"
+                                    value="@mail_for_log#" />
+                            </td>
+                        </tr>
+                        <tr style="display: none">
+                            <td height="25" class="table_left">&nbsp;&nbsp;Response Address </td>
+                            <td class="table_right">&nbsp;
+                                <input type="text" name="mail_for_return" maxlength="32" class="input_email"
+                                    value="@mail_for_return#" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td height="25" class="table_left">&nbsp; Email Sending Interval </td>
+                            <td class="table_right">&nbsp;
+                                <select name="mail_intel_time" class="stdbutton4">
+                                    <option value="0" selected>Don't Send</option>
+                                    <option value="1">1 Hour</option>
+                                    <option value="2">2 Hours</option>
+                                    <option value="4">4 Hours</option>
+                                    <option value="12">12 Hours</option>
+                                    <option value="24">24 Hours</option>
+                                </select>
+                                <input name="sendmail" type="SUBMIT" class="showbtn7" onclick="return send_mail();"
+                                    value="Send Test Email" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr height="8">
+                <td width="1001">
+                    <div style="overflow:hidden;background:#969594;height:1px;"></div>
+                </td>
+            </tr>
+            <tr align="left" valign="top">
+                <td height="25" align="center" valign="top" style="padding-top:5px"><span style="padding-top:5px">
+                        <input type="Submit" name="Save" value="Submit" onClick="return checkData();" class="showbtn6">
+                        &nbsp;
+                        <input type="button" name="Cancel" value="Cancel"
+                            onClick="location.href='setup.cgi?next_file=email_en.html'" class="showbtn6">
+                    </span></td>
+            </tr>
+        </table>
+        <input type="hidden" name="enableEnglish" value="@enableEnglish#">
+        <input type="hidden" name="h_mail_enable" value="@h_mail_enable#">
+        <input type="hidden" name="h_mail_intel_time" value="@h_mail_intel_time#">
+        <input type="hidden" name="loader" value="@loader#">
+        <input type="hidden" name="todo" value="save">
+        <input type="hidden" name="this_file" value="email_en.html">
+        <input type="hidden" name="next_file" value="email_en.html">
+        <input type="hidden" name="message" value="@msg_text#">
+        <input type="hidden" name="switch_type" value="@switch_type#">
+    </form>
+</body>
+
+</html>
