@@ -1,0 +1,108 @@
+name: Bulid Vega Buildroot Image (CI Version)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build Image with build.sh
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Check Commit ID
+      id: truecommit
+      run: |
+        echo "shortid=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        echo "longid=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        echo "$(git log -1)" >> ${{ github.workspace }}/message.log
+
+    - name: Initialization environment
+      run: |
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install -y make git gcc g++ bison flex device-tree-compiler mtd-utils
+
+    - name: Run build.sh
+      id: imagegen
+      run: bash ./build.sh 2>&1 | tee ${{ github.workspace }}/build.log
+
+    - name: Generate Hash
+      working-directory: ${{ github.workspace }}/out
+      run: |
+        echo "$(sha256sum freeloader.bin)" >> ${{ github.workspace }}/Vega-Buildroot.sha256
+        echo "$(sha256sum kernel.bin)" >> ${{ github.workspace }}/Vega-Buildroot.sha256
+        echo "$(sha256sum ubifs.img)" >> ${{ github.workspace }}/Vega-Buildroot.sha256
+
+    - name: Upload Image
+      uses: actions/upload-artifact@main
+      with:
+        name: Vega-${{ steps.truecommit.outputs.shortid }}-Image
+        path: |
+          ${{ github.workspace }}/out/freeloader.bin
+          ${{ github.workspace }}/out/kernel.bin
+          ${{ github.workspace }}/out/ubifs.img
+        if-no-files-found: error
+
+    - name: Upload Log
+      uses: actions/upload-artifact@main
+      with:
+        name: Vega-${{ steps.truecommit.outputs.shortid }}-Log
+        path: |
+          ${{ github.workspace }}/build.log
+        if-no-files-found: error
+    
+    - name: Output Success Summary
+      if: steps.imagegen.outcome == 'success'
+      run: |
+        echo "# Vega Buildroot Image Building Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "[CI #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) powered by [${{ github.repository }}](${{ github.server_url }}/${{ github.repository }}) has successfully built the Vega Buildroot image." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Commit Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "CI has built on commit [${{ steps.truecommit.outputs.shortid }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.truecommit.outputs.longid }}). The commit message is shown below." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        cat ${{ github.workspace }}/message.log >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Artifacts Hash" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        cat ${{ github.workspace }}/Vega-Buildroot.sha256 >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Build Log" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Last 100 Lines of Build Log" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        tail -100 ${{ github.workspace }}/build.log >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Output Failed Summary
+      if: ${{ !cancelled() }}
+      run: |
+        echo "# Vega Buildroot Image Building Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "[CI #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) powered by [${{ github.repository }}](${{ github.server_url }}/${{ github.repository }}) has failed to built the Vega Buildroot image." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Commit Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "CI has built on commit [${{ steps.truecommit.outputs.shortid }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.truecommit.outputs.longid }}). The commit message is shown below." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        cat ${{ github.workspace }}/message.log >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Build Log" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Last 200 Lines of Build Log" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        tail -200 ${{ github.workspace }}/build.log >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
